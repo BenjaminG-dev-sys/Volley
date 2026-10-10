@@ -9,8 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "seed": "tsx scripts/seed.ts",
-    "db:migrate": "tsx scripts/migrate.ts"
+    "seed": "tsx --env-file=.env.local scripts/seed.mts"
   },
   "dependencies": {
     "@insforge/sdk": "^1.5.2",

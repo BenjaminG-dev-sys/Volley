@@ -68,7 +68,7 @@ export function applyEvent(
   event: MatchEventInput & { seq?: number },
   setup: MatchSetup,
 ): MatchState {
-  const state: MatchState = structuredClone(prev);
+  const state = cloneState(prev);
   state.notice = null;
   const seq = event.seq ?? state.lastSeq + 1;
   state.lastSeq = Math.max(state.lastSeq, seq);
@@ -246,6 +246,37 @@ export function applyEvent(
     case "undo":
       return fail("`undo` se resuelve en replay(), no en applyEvent().");
   }
+}
+
+// Copia estructural barata: las entradas de log, rallies y sanciones son inmutables
+// una vez creadas, así que basta con copiar los arreglos.
+function cloneTeam(t: TeamSetState): TeamSetState {
+  return {
+    ...t,
+    positions: [...t.positions],
+    starters: [...t.starters],
+    liberos: [...t.liberos],
+    subPairs: t.subPairs.map((p) => ({ ...p })),
+    liberoOnCourt: t.liberoOnCourt && { ...t.liberoOnCourt },
+  };
+}
+
+function cloneState(prev: MatchState): MatchState {
+  return {
+    ...prev,
+    setsWon: { ...prev.setsWon },
+    sets: prev.sets.map((s) => ({
+      ...s,
+      score: { ...s.score },
+      teams: { A: cloneTeam(s.teams.A), B: cloneTeam(s.teams.B) },
+      rallies: [...s.rallies],
+    })),
+    pendingLineups: { ...prev.pendingLineups },
+    sanctions: [...prev.sanctions],
+    expelled: { A: [...prev.expelled.A], B: [...prev.expelled.B] },
+    disqualified: { A: [...prev.disqualified.A], B: [...prev.disqualified.B] },
+    log: [...prev.log],
+  };
 }
 
 function onCourt(ts: TeamSetState, n: number) {
