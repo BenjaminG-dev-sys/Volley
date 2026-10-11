@@ -130,8 +130,8 @@ async function main() {
     groups.flatMap((g, gi) => g.map((teamId, si) => ({ tournament_id: tournament.id, team_id: teamId, group_label: groupLabel(gi), seed: si + 1 }))),
   ), "tournament_teams");
 
-  // Jornadas: 3 fines de semana de octubre 2026 (hora de Ecuador, UTC-5).
-  const day0 = Date.UTC(2026, 9, 3, 14, 0); // 3 oct 09:00 ECT
+  // Jornadas en sábados consecutivos: 26 sep, 3 oct y 10 oct de 2026 (hora de Ecuador, UTC-5).
+  const day0 = Date.UTC(2026, 8, 26, 14, 0); // 26 sep 09:00 ECT
   const fixtures = groups.flatMap((g, gi) =>
     roundRobin(g).map((f) => ({ ...f, group: groupLabel(gi) })),
   );

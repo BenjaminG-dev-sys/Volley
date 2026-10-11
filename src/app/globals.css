@@ -1,26 +1,78 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:where(.dark, .dark *));
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  --bg: #f5f7fb;
+  --surface: #ffffff;
+  --surface-2: #eef2f8;
+  --border: #dde3ee;
+  --text: #0f172a;
+  --muted: #5b6475;
+  --primary: #1e40af;
+  --primary-contrast: #ffffff;
+  --accent: #f59e0b;
+  --live: #dc2626;
+  --ok: #15803d;
+  --court: #e8a95a;
+  --court-line: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #0b1020;
+    --surface: #121a2e;
+    --surface-2: #1a2440;
+    --border: #26314f;
+    --text: #e8ecf5;
+    --muted: #97a2bb;
+    --primary: #6d8ff5;
+    --primary-contrast: #0b1020;
+    --accent: #fbbf24;
+    --live: #f87171;
+    --ok: #4ade80;
+    --court: #b5773a;
+    --court-line: #f1e3cf;
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--border);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-contrast: var(--primary-contrast);
+  --color-accent: var(--accent);
+  --color-live: var(--live);
+  --color-ok: var(--ok);
+  --color-court: var(--court);
+  --color-court-line: var(--court-line);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display-face), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.live-dot {
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+@media print {
+  body { background: #fff; color: #000; }
+  .no-print { display: none !important; }
+  .print-sheet { box-shadow: none !important; border: none !important; }
 }

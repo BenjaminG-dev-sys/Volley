@@ -1,103 +1,76 @@
-import Image from "next/image";
+import Link from "next/link";
+import { LiveRefresher } from "@/components/live-refresher";
+import { MatchRow } from "@/components/match-row";
+import { Badge, Card, CardHeader, Empty } from "@/components/ui";
+import { listMatches, listTeams, listTournaments } from "@/lib/data";
+import { BRANCH_LABEL } from "@/lib/format";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const [tournaments, teams, live, upcoming, recent] = await Promise.all([
+    listTournaments(),
+    listTeams(),
+    listMatches({ status: "live", limit: 10 }),
+    listMatches({ status: "scheduled", limit: 6 }),
+    listMatches({ status: "finished", limit: 6 }),
+  ]);
+  const teamMap = new Map(teams.map((t) => [t.id, t]));
+  const active = tournaments.filter((t) => t.status !== "draft");
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="space-y-8">
+      <LiveRefresher />
+      <section className="overflow-hidden rounded-2xl bg-primary px-6 py-8 text-primary-contrast sm:px-10 sm:py-10">
+        <p className="text-sm font-medium uppercase tracking-widest opacity-80">Voleibol en Ecuador</p>
+        <h1 className="mt-2 max-w-2xl font-display text-3xl font-bold leading-tight sm:text-5xl">
+          Torneos, posiciones y marcador en vivo desde la mesa de control
+        </h1>
+        <p className="mt-3 max-w-xl opacity-85">
+          Planilla electrónica con reglas FIVB: cada punto que anota el planillero aparece aquí al instante.
+        </p>
+      </section>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      <section>
+        <h2 className="mb-3 font-display text-xl font-bold">En vivo ahora</h2>
+        <Card className="divide-y divide-line">
+          {live.length ? live.map((m) => <MatchRow key={m.id} match={m} teams={teamMap} showStage />) : <Empty>No hay partidos en juego en este momento.</Empty>}
+        </Card>
+      </section>
+
+      <section>
+        <h2 className="mb-3 font-display text-xl font-bold">Torneos</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {active.map((t) => (
+            <Link key={t.id} href={`/torneos/${t.id}`}>
+              <Card className="h-full p-5 transition hover:border-primary">
+                <div className="flex flex-wrap gap-2">
+                  <Badge tone="primary">{t.category}</Badge>
+                  <Badge>{BRANCH_LABEL[t.branch]}</Badge>
+                  <Badge tone={t.status === "active" ? "ok" : "neutral"}>{t.status === "active" ? "En curso" : "Finalizado"}</Badge>
+                </div>
+                <h3 className="mt-3 font-display text-xl font-bold">{t.name}</h3>
+                <p className="text-sm text-muted">
+                  Temporada {t.season}
+                  {t.city ? ` · ${t.city}` : ""} · al mejor de {t.best_of} sets
+                </p>
+              </Card>
+            </Link>
+          ))}
+          {!active.length && <Empty>Aún no hay torneos publicados.</Empty>}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="divide-y divide-line">
+          <CardHeader title="Próximos partidos" />
+          {upcoming.length ? upcoming.map((m) => <MatchRow key={m.id} match={m} teams={teamMap} showStage />) : <Empty>Sin partidos programados.</Empty>}
+        </Card>
+        <Card className="divide-y divide-line">
+          <CardHeader title="Resultados recientes" />
+          {recent.length ? recent.map((m) => <MatchRow key={m.id} match={m} teams={teamMap} showStage />) : <Empty>Sin resultados todavía.</Empty>}
+        </Card>
+      </div>
     </div>
   );
 }

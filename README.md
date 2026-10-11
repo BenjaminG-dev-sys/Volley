@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Gestión de Torneos de Voleibol
 
-## Getting Started
+Demo full stack para ligas y asociaciones de voleibol en Ecuador: torneos, calendario, tabla de posiciones FIVB
+y **planilla electrónica** para la mesa de control, con marcador público en tiempo real.
 
-First, run the development server:
+**Demo en la nube:** https://my4nm2i7.insforge.site
+
+| Usuario | Contraseña | Rol | Qué puede hacer |
+|---|---|---|---|
+| `admin@demo.ec` | `Voley2026!` | Administrador | Todo, incluido asignar roles |
+| `organizador@demo.ec` | `Voley2026!` | Organizador | Torneos, equipos, nóminas, calendario, asignaciones |
+| `planillero@demo.ec` | `Voley2026!` | Planillero | Llevar la planilla de los partidos asignados |
+| _(sin cuenta)_ | | Público | Portada, torneos, posiciones, marcador en vivo, planilla final |
+
+## Guion de demostración (≈5 min)
+
+1. **Portada** (`/`): partido en vivo, torneos, próximos partidos y resultados.
+2. **Torneo** → tablas de los grupos A y B (puntos FIVB 3/2/1, cocientes de sets y puntos), calendario por jornada.
+3. Abre el **marcador en vivo** del partido en juego en una pantalla grande (sin sesión).
+4. En otra pestaña o tablet, ingresa como `planillero@demo.ec` → **Mesa** → *Continuar planilla*.
+   Anota puntos, pide un tiempo, toca un jugador para sustituirlo o hacer entrar al líbero, y usa **Deshacer**.
+   El marcador público cambia al instante, sin recargar.
+5. Termina el set: el sistema aplica el cambio de cancha, alterna el saque y pide las formaciones del siguiente set.
+6. Al terminar el partido: firmas → **Planilla final** imprimible (Imprimir / PDF).
+7. Como `organizador@demo.ec` → **Admin**: inscripción de equipos, generador de calendario, asignación de
+   planillero y árbitros, nóminas con validación de cédula y edad por categoría.
+
+## Arquitectura
+
+- **Next.js 15** (App Router, Server Components y Server Actions) + Tailwind CSS. UI en español, hora `America/Guayaquil`.
+- **InsForge** (proyecto `Volei`): Postgres + PostgREST, Auth (cookies SSR), Realtime y hosting.
+- **Planilla basada en eventos**: cada acción de la mesa es una fila inmutable en `match_events` (`seq` único por partido).
+  El estado se deriva con un motor de reglas puro (`replay(setup, events)`): deshacer, auditoría y reconstrucción
+  tras una desconexión salen gratis. `matches.live_state` guarda un snapshot pequeño para los listados.
+- **Realtime**: triggers en `matches` y `match_events` publican en `match:{id}` y `live`; los clientes no pueden
+  publicar (RLS en `realtime.messages`).
+- **Offline**: la mesa guarda cada evento primero en IndexedDB y lo sincroniza en orden al volver la conexión
+  (los reintentos no duplican gracias a `UNIQUE (match_id, seq)`).
+- **Seguridad (RLS)**: lectura pública de información deportiva; escritura solo para staff; la planilla solo la
+  escribe el planillero asignado; la cédula y la fecha de nacimiento solo las ve el staff (el público lee la vista
+  `players_public`).
+
+### Reglas FIVB implementadas (`src/lib/scoresheet/`)
+
+Sets a 25 (5.º a 15) con diferencia de 2 · mejor de 5 o de 3 · rally point y rotación horaria al recuperar el saque ·
+primer saque alternado y sorteo para el set decisivo · cambio de cancha a los 8 en el set decisivo · 2 tiempos por set ·
+6 sustituciones por set (titular ↔ suplente, una vuelta por set) · hasta 2 líberos: solo zagueros, no saca, sale al
+rotar a delantera, un rally entre reemplazos · amonestación, castigo (punto y saque al rival), expulsión,
+descalificación y escalamiento por retraso · cierre con firmas.
+
+## Desarrollo local
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # completar con los valores del proyecto InsForge
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Comando | Qué hace |
+|---|---|
+| `npm test` | Pruebas del motor de reglas, calendario, posiciones y cédula (Vitest) |
+| `npm run lint` / `npm run build` | Lint y compilación de producción |
+| `npm run seed` | Reemplaza los datos demo (torneo, 8 clubes, 96 jugadoras, partidos simulados con el motor) |
+| `npm run seed:users` | Crea/actualiza los usuarios demo y asigna al planillero los partidos pendientes |
+| `npm run test:e2e` | Playwright: flujo de mesa + marcador en vivo y panel de admin (`BASE_URL` para apuntar a la nube). Modifica datos: luego `npm run seed && npm run seed:users` |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Base de datos: migraciones en `migrations/` (`npx -y @insforge/cli db migrations up --all`).
+Despliegue: `npx -y @insforge/cli deployments deploy .` (variables `NEXT_PUBLIC_INSFORGE_*` ya configuradas en InsForge).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+> Para la demo se desactivó la verificación de correo en InsForge (`insforge.toml` → `require_email_verification = false`)
+> porque las cuentas `@demo.ec` no reciben correo. Antes de producción conviene volver a activarla y aplicar con
+> `npx -y @insforge/cli config apply`.
 
-## Learn More
+## Fuera del alcance de esta demo
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Ecuavóley, vóley playa, estadísticas por jugadora, pagos de inscripción, protestas y sustituciones excepcionales,
+firmas con validez legal y app móvil nativa.
