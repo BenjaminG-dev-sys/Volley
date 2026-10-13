@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ActionForm } from "@/components/action-form";
 import { Badge, Button, Card, CardHeader, Field, PageHeader, TeamDot, inputCls } from "@/components/ui";
 import { serverClient } from "@/lib/insforge/server";
+import { ROSTER_LIMITS, SPORT_LABEL, SPORT_POSITIONS } from "@/lib/scoresheet/rules";
 import { CATEGORIES } from "@/lib/tournament/categories";
 import type { Player, Team } from "@/lib/types";
 import { createPlayer, deletePlayer } from "../../actions";
@@ -19,6 +20,8 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
   if (!team) notFound();
   const t = team as Team;
   const list = (players ?? []) as Player[];
+  const sport = t.sport ?? "voley";
+  const limits = ROSTER_LIMITS[sport];
 
   return (
     <div className="space-y-6">
@@ -28,7 +31,11 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
             <TeamDot color={t.color_primary} /> {t.name}
           </span>
         }
-        sub={`${list.length}/14 jugadores · ${list.filter((p) => p.is_libero).length}/2 líberos`}
+        sub={
+          limits.liberos
+            ? `${SPORT_LABEL[sport]} · ${list.length}/${limits.players} jugadores · ${list.filter((p) => p.is_libero).length}/${limits.liberos} líberos`
+            : `${SPORT_LABEL[sport]} · ${list.length}/${limits.players} jugadores`
+        }
       />
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
         <Card className="overflow-x-auto">
@@ -88,7 +95,7 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
               <Field label="Posición">
                 <select name="position" className={inputCls}>
                   <option value="">—</option>
-                  {["armador", "opuesto", "central", "punta"].map((p) => (
+                  {SPORT_POSITIONS[sport].map((p) => (
                     <option key={p} value={p}>
                       {p}
                     </option>
@@ -108,9 +115,11 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
               </Field>
             </div>
             <div className="flex gap-4 text-sm">
-              <label className="flex items-center gap-2">
-                <input type="checkbox" name="is_libero" /> Líbero
-              </label>
+              {limits.liberos > 0 && (
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" name="is_libero" /> Líbero
+                </label>
+              )}
               <label className="flex items-center gap-2">
                 <input type="checkbox" name="is_captain" /> Capitán(a)
               </label>

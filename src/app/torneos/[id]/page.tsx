@@ -8,6 +8,7 @@ import { StandingsTable } from "@/components/standings-table";
 import { Card, Empty, Hero, LiveBadge, Section, StatNumber, TeamCrest } from "@/components/ui";
 import { getTournament, listTeams } from "@/lib/data";
 import { BRANCH_LABEL, BRANCH_TONE, fmtDateTime } from "@/lib/format";
+import { SPORT_LABEL, describeRules, resolveRules } from "@/lib/scoresheet/rules";
 import { recentForm } from "@/lib/tournament/form";
 import { computeStandings } from "@/lib/tournament/standings";
 import type { Match, Team } from "@/lib/types";
@@ -60,9 +61,9 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
       <LiveRefresher tournamentId={id} />
       <Hero
         tone={tone}
-        eyebrow={`Temporada ${tournament.season} · ${tournament.category} · ${BRANCH_LABEL[tournament.branch]}`}
+        eyebrow={`${SPORT_LABEL[tournament.sport ?? "voley"]} · Temporada ${tournament.season} · ${tournament.category} · ${BRANCH_LABEL[tournament.branch]}`}
         title={tournament.name}
-        sub={`${tournament.city ? `${tournament.city} · ` : ""}${tournament.format === "groups_knockout" ? "Fase de grupos y eliminatorias" : "Todos contra todos"} · al mejor de ${tournament.best_of} sets`}
+        sub={`${tournament.city ? `${tournament.city} · ` : ""}${tournament.format === "groups_knockout" ? "Fase de grupos y eliminatorias" : "Todos contra todos"} · ${describeRules(resolveRules(tournament.sport ?? "voley", tournament.rules, tournament.best_of)).split(" · ").slice(1).join(" · ")}`}
         aside={
           <div className="grid grid-cols-3 gap-6 lg:gap-10">
             <StatNumber value={entries.length} label="Equipos" />
@@ -95,7 +96,10 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
       )}
 
       <section id="posiciones" className="scroll-mt-32">
-        <SectionTitle eyebrow="Puntos FIVB: 3-0 / 3-1 = 3 · 3-2 = 2 y 1" title="Posiciones" />
+        <SectionTitle
+          eyebrow={tournament.best_of === 3 ? "Puntos: 2-0 = 3 · 2-1 = 2 y 1" : "Puntos FIVB: 3-0 / 3-1 = 3 · 3-2 = 2 y 1"}
+          title="Posiciones"
+        />
         <div className="grid gap-6 xl:grid-cols-2">
           {groups.map((g) => {
             const teamIds = entries.filter((e) => (e.group_label ?? "Única") === g).map((e) => e.team_id);

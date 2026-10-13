@@ -1,4 +1,4 @@
-import { MAX_SUBSTITUTIONS, MAX_TIMEOUTS, currentSet, type MatchState, type Side } from "@/lib/scoresheet";
+import { currentSet, type MatchState, type Side } from "@/lib/scoresheet";
 import { ServeIcon } from "@/components/icons";
 import { cx } from "@/components/ui";
 
@@ -91,8 +91,8 @@ export function Scoreboard({
                 </div>
                 {ts && (
                   <div className={cx("flex flex-wrap gap-x-4 gap-y-1", right && "justify-end")}>
-                    <Pips left={MAX_TIMEOUTS - ts.timeouts} total={MAX_TIMEOUTS} label="Tiempos" />
-                    <Pips left={MAX_SUBSTITUTIONS - ts.substitutions} total={MAX_SUBSTITUTIONS} label="Sust." />
+                    <Pips left={state.rules.timeoutsPerSet - ts.timeouts} total={state.rules.timeoutsPerSet} label="Tiempos" />
+                    <Pips left={state.rules.maxSubstitutions - ts.substitutions} total={state.rules.maxSubstitutions} label="Sust." />
                   </div>
                 )}
               </div>
@@ -120,6 +120,11 @@ function Middle({ state, order, big }: { state: MatchState; order: Side[]; big: 
       <span className={cx("whitespace-nowrap rounded-full bg-volt px-2 py-1 font-bold uppercase tracking-wider text-black sm:px-3", big ? "text-[11px] sm:text-sm" : "text-[11px]")}>
         {label}
       </span>
+      {state.rules.scoring === "sideout" && (
+        <span className="eyebrow text-center text-[9px] text-white/50 sm:text-[10px]" title="Solo suma el equipo que saca">
+          Con cambio
+        </span>
+      )}
       <div className="tabular space-y-1 text-center font-display text-xs text-white/70 sm:text-base">
         {finishedSets.map((s) => (
           <div key={s.no} className="whitespace-nowrap">

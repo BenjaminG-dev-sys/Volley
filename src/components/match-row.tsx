@@ -22,7 +22,7 @@ export function matchView(match: Match, teams: Map<string, Team>) {
     homeWon: finished && match.winner_team_id === match.home_team_id,
     awayWon: finished && match.winner_team_id === match.away_team_id,
     href: finished ? `/partidos/${match.id}/planilla` : `/partidos/${match.id}/en-vivo`,
-    stage: `${STAGE_LABEL[match.stage]}${match.group_label ? ` ${match.group_label}` : ""}`,
+    stage: `${home?.sport === "ecuavoley" ? "Ecuavóley · " : ""}${STAGE_LABEL[match.stage]}${match.group_label ? ` ${match.group_label}` : ""}`,
     liveScore: live && ls ? `Set ${ls.currentSet} · ${ls.score.A}-${ls.score.B}` : null,
     setScores: finished && res ? res.sets.map((s) => `${s.home}-${s.away}`) : null,
   };

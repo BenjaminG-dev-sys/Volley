@@ -27,11 +27,20 @@ export async function listVenues() {
   return run<Venue[]>(db.from("venues").select("*").order("name").limit(100));
 }
 
-export async function listMatches(filter: { status?: Match["status"]; tournamentId?: string; scorerId?: string; limit?: number }) {
+export async function listMatches(filter: {
+  status?: Match["status"];
+  tournamentId?: string;
+  /** Solo partidos de estos torneos (p. ej. los de un deporte). */
+  tournamentIds?: string[];
+  scorerId?: string;
+  limit?: number;
+}) {
+  if (filter.tournamentIds && !filter.tournamentIds.length) return [];
   const db = (await serverClient()).database;
   let q = db.from("matches").select(MATCH_COLS);
   if (filter.status) q = q.eq("status", filter.status);
   if (filter.tournamentId) q = q.eq("tournament_id", filter.tournamentId);
+  if (filter.tournamentIds) q = q.in("tournament_id", filter.tournamentIds);
   if (filter.scorerId) q = q.eq("scorer_id", filter.scorerId);
   return run<Match[]>(q.order("scheduled_at", { ascending: filter.status !== "finished" }).limit(filter.limit ?? 200));
 }

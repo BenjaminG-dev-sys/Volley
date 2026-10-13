@@ -1,5 +1,7 @@
 // Filas de la base de datos (InsForge / PostgREST).
 
+import type { RuleOverrides, Sport } from "./scoresheet/rules";
+
 export type Role = "admin" | "organizer" | "scorer" | "referee" | "viewer";
 export type MatchStatus = "scheduled" | "live" | "finished";
 export type Stage = "league" | "group" | "semifinal" | "third_place" | "final";
@@ -30,6 +32,9 @@ export interface Tournament {
   format: "round_robin" | "groups_knockout";
   best_of: 3 | 5;
   status: "draft" | "active" | "finished";
+  sport: Sport;
+  /** Ajustes del reglamento respecto del preset del deporte. */
+  rules: RuleOverrides | null;
   created_at: string;
 }
 
@@ -43,6 +48,7 @@ export interface Team {
   color_primary: string;
   color_secondary: string;
   logo_url: string | null;
+  sport: Sport;
 }
 
 export interface Player {

@@ -4,6 +4,7 @@ import { ActionForm } from "@/components/action-form";
 import { Badge, Card, CardHeader, Empty, Field, PageHeader, inputCls } from "@/components/ui";
 import { listTournaments } from "@/lib/data";
 import { BRANCH_LABEL } from "@/lib/format";
+import { RULE_PRESETS, SPORT_LABEL } from "@/lib/scoresheet/rules";
 import { CATEGORIES } from "@/lib/tournament/categories";
 import { createTournament } from "./actions";
 
@@ -23,7 +24,7 @@ export default async function AdminHome() {
               <div>
                 <div className="font-medium">{t.name}</div>
                 <div className="text-sm text-muted">
-                  {t.category} · {BRANCH_LABEL[t.branch]} · {t.season}
+                  {SPORT_LABEL[t.sport ?? "voley"]} · {t.category} · {BRANCH_LABEL[t.branch]} · {t.season}
                 </div>
               </div>
               <Badge tone={t.status === "active" ? "ok" : "neutral"}>{STATUS[t.status]}</Badge>
@@ -67,10 +68,13 @@ export default async function AdminHome() {
                 <option value="groups_knockout">Grupos + eliminatoria</option>
               </select>
             </Field>
-            <Field label="Sets">
-              <select name="best_of" className={inputCls}>
-                <option value="5">Al mejor de 5</option>
-                <option value="3">Al mejor de 3</option>
+            <Field label="Deporte y reglamento" hint="El ecuavóley se juega con 3 por equipo y cambio de saque">
+              <select name="preset" className={inputCls} defaultValue="voley_fivb">
+                {Object.entries(RULE_PRESETS).map(([id, p]) => (
+                  <option key={id} value={id}>
+                    {p.label}
+                  </option>
+                ))}
               </select>
             </Field>
           </div>

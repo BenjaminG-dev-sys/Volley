@@ -43,6 +43,23 @@ y **planilla electrónica** para la mesa de control, con marcador público en ti
   `players_public`). El servidor valida el resultado que publica la mesa (marcadores posibles, sets ganados), deriva el
   ganador y solo acepta cerrar el partido si la planilla tiene el evento `close`.
 
+### Dos modos de juego: Vóley y Ecuavóley
+
+Cada torneo elige su deporte y reglamento (`tournaments.sport` y `tournaments.rules`); el motor aplica un `RuleSet`
+(`src/lib/scoresheet/rules.ts`) y la mesa, la cancha, el marcador y la planilla se adaptan solos.
+
+| | Vóley (FIVB) | Ecuavóley (por defecto) |
+|---|---|---|
+| Jugadores | 6, rotación, hasta 2 líberos | 3 con roles fijos (servidor, colocador, volador), sin líbero ni rotación |
+| Sets | Al mejor de 5 (o 3), a 25; decisivo a 15 | Al mejor de 3, a 15 (variantes a 12 o 10) |
+| Puntuación | Rally point | Con cambio: solo suma quien saca; si gana el receptor, recupera el saque (variante punto directo) |
+| Tiempos / sustituciones | 2 por set / 6 (titular ↔ suplente) | 2 por set solo con el saque / 6 libres |
+| Cambio de cancha | Decisivo a los 8 | 3.er set a los 8 (a los 6 si es a 12) |
+| Nómina | 14 jugadores, 2 líberos | 7 jugadores (3 + 4 suplentes) |
+
+El ecuavóley no tiene un reglamento oficial único; los valores por defecto siguen los reglamentos de torneos más
+citados y se pueden ajustar por torneo.
+
 ### Reglas FIVB implementadas (`src/lib/scoresheet/`)
 
 Sets a 25 (5.º a 15) con diferencia de 2 · mejor de 5 o de 3 · rally point y rotación horaria al recuperar el saque ·
@@ -63,7 +80,7 @@ npm run dev                  # http://localhost:3000
 |---|---|
 | `npm test` | Pruebas del motor de reglas, calendario, posiciones y cédula (Vitest) |
 | `npm run lint` / `npm run build` | Lint y compilación de producción |
-| `npm run seed` | Reemplaza los datos demo (torneo, 8 clubes, 96 jugadoras, partidos simulados con el motor) |
+| `npm run seed` | Reemplaza los datos demo: torneo de vóley (8 clubes, 96 jugadoras) e interparroquial de ecuavóley (6 parroquias), con partidos simulados con el motor |
 | `npm run seed:users` | Crea/actualiza los usuarios demo y asigna al planillero los partidos pendientes |
 | `npm run test:e2e` | Playwright: flujo de mesa + marcador en vivo y panel de admin (`BASE_URL` para apuntar a la nube). Modifica datos: luego `npm run seed && npm run seed:users` |
 

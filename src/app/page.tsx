@@ -8,19 +8,30 @@ import { Badge, Card, CardHeader, Empty, Hero, LinkButton, LiveBadge, Section, T
 import { listMatches, listTeams, listTournaments } from "@/lib/data";
 import { teamVars } from "@/lib/color";
 import { BRANCH_LABEL, BRANCH_TONE } from "@/lib/format";
+import { SPORT_LABEL, type Sport } from "@/lib/scoresheet/rules";
 import type { Match, Team, Tournament } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
-  const [tournaments, teams, live, upcoming, recent] = await Promise.all([
-    listTournaments(),
-    listTeams(),
-    listMatches({ status: "live", limit: 10 }),
-    listMatches({ status: "scheduled", limit: 8 }),
-    listMatches({ status: "finished", limit: 8 }),
+const MODES = [
+  { id: "todo", label: "Todo" },
+  { id: "voley", label: SPORT_LABEL.voley },
+  { id: "ecuavoley", label: SPORT_LABEL.ecuavoley },
+] as const;
+
+export default async function Home({ searchParams }: { searchParams: Promise<{ deporte?: string }> }) {
+  const { deporte } = await searchParams;
+  const sport: Sport | null = deporte === "voley" || deporte === "ecuavoley" ? deporte : null;
+  const [allTournaments, allTeams] = await Promise.all([listTournaments(), listTeams()]);
+  const tournaments = sport ? allTournaments.filter((t) => (t.sport ?? "voley") === sport) : allTournaments;
+  const teams = sport ? allTeams.filter((t) => (t.sport ?? "voley") === sport) : allTeams;
+  const tournamentIds = sport ? tournaments.map((t) => t.id) : undefined;
+  const [live, upcoming, recent] = await Promise.all([
+    listMatches({ status: "live", limit: 10, tournamentIds }),
+    listMatches({ status: "scheduled", limit: 8, tournamentIds }),
+    listMatches({ status: "finished", limit: 8, tournamentIds }),
   ]);
-  const teamMap = new Map(teams.map((t) => [t.id, t]));
+  const teamMap = new Map(allTeams.map((t) => [t.id, t]));
   const active = tournaments.filter((t) => t.status !== "draft");
   const featured = live[0] ?? upcoming[0] ?? null;
 
@@ -28,7 +39,8 @@ export default async function Home() {
     <div className="space-y-14">
       <LiveRefresher />
       <Hero
-        eyebrow="Voleibol en Ecuador"
+        tone={sport === "ecuavoley" ? "sun" : "court"}
+        eyebrow={sport === "ecuavoley" ? "Ecuavóley en Ecuador" : sport === "voley" ? "Vóley en Ecuador" : "Vóley y ecuavóley en Ecuador"}
         title={
           <>
             Cada punto
@@ -36,7 +48,11 @@ export default async function Home() {
             en vivo
           </>
         }
-        sub="Torneos, posiciones y planilla electrónica FIVB: lo que anota la mesa de control aparece aquí al instante."
+        sub={
+          sport === "ecuavoley"
+            ? "Planilla de ecuavóley con cambio de saque: lo que anota la mesa de control aparece aquí al instante."
+            : "Torneos, posiciones y planilla electrónica: lo que anota la mesa de control aparece aquí al instante."
+        }
         actions={
           <>
             {live[0] && (
@@ -52,11 +68,24 @@ export default async function Home() {
         aside={featured && <FeaturedMatch match={featured} teams={teamMap} />}
       />
 
-      {(live.length > 0 || recent.length > 0) && (
-        <div className="-mt-14">
-          <ResultsMarquee matches={[...live, ...recent]} teams={teamMap} />
-        </div>
-      )}
+      <div className="-mt-14">
+        {(live.length > 0 || recent.length > 0) && <ResultsMarquee matches={[...live, ...recent]} teams={teamMap} />}
+        <nav aria-label="Deporte" className="mt-6 flex flex-wrap gap-2">
+          {MODES.map((m) => {
+            const active = (sport ?? "todo") === m.id;
+            return (
+              <Link
+                key={m.id}
+                href={m.id === "todo" ? "/" : `/?deporte=${m.id}`}
+                aria-current={active ? "page" : undefined}
+                className={`rounded-full border-[1.5px] px-5 py-2 text-sm font-semibold transition ${active ? "border-ink bg-ink text-bg" : "border-line hover:border-ink"}`}
+              >
+                {m.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
 
       <section id="en-vivo" className="scroll-mt-20">
         <SectionTitle eyebrow="Ahora mismo" title={live.length ? "En vivo" : "Próximos partidos"} />
@@ -182,6 +211,7 @@ function TournamentTile({ t }: { t: Tournament }) {
     <Link href={`/torneos/${t.id}`} className={`group flex min-h-56 flex-col justify-between rounded-2xl p-6 transition hover:-translate-y-0.5 ${bg}`}>
       <div className="flex flex-wrap gap-2">
         <Badge tone="primary">{t.category}</Badge>
+        <span className="eyebrow">{SPORT_LABEL[t.sport ?? "voley"]}</span>
         <span className="eyebrow">{BRANCH_LABEL[t.branch]}</span>
         <span className="eyebrow ml-auto">{t.status === "active" ? "En curso" : "Finalizado"}</span>
       </div>

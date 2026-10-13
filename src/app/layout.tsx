@@ -13,7 +13,7 @@ const display = Barlow_Condensed({ variable: "--font-display-face", subsets: ["l
 
 export const metadata: Metadata = {
   title: { default: "Voley EC · Torneos de voleibol", template: "%s · Voley EC" },
-  description: "Torneos, calendario, posiciones y planilla electrónica FIVB con marcador en vivo.",
+  description: "Torneos de vóley y ecuavóley: calendario, posiciones y planilla electrónica con marcador en vivo.",
 };
 
 export const viewport: Viewport = { themeColor: "#111111" };
@@ -59,7 +59,8 @@ function SiteFooter() {
             que se vive
           </p>
           <p className="mt-4 max-w-sm text-sm text-white/70">
-            Torneos, posiciones y planilla electrónica FIVB con marcador en vivo para ligas y asociaciones de Ecuador.
+            Torneos de vóley y ecuavóley, posiciones y planilla electrónica con marcador en vivo para ligas, parroquias y
+            asociaciones de Ecuador.
           </p>
         </div>
         <nav aria-label="Torneos" className="space-y-3 text-sm">

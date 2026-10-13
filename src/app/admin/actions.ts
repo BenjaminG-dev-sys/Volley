@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSession, isStaff, serverClient } from "@/lib/insforge/server";
+import { RULE_PRESETS, type RulePresetId } from "@/lib/scoresheet/rules";
 import { CATEGORIES, type Category, validateCategoryAge } from "@/lib/tournament/categories";
 import { validateCedula } from "@/lib/tournament/cedula";
 import { crossSemis, groupLabel, roundRobin, snakeGroups } from "@/lib/tournament/scheduler";
@@ -33,6 +34,9 @@ export async function createTournament(_: ActionState, f: FormData): Promise<Act
     const db = await staffDb();
     const category = str(f, "category");
     if (!CATEGORIES.includes(category as Category)) throw new Error("Categoría inválida.");
+    const presetId = str(f, "preset") as RulePresetId;
+    const preset = RULE_PRESETS[presetId];
+    if (!preset) throw new Error("Reglamento inválido.");
     const [t] = await must<{ id: string }[]>(
       db.from("tournaments").insert([{
         name: str(f, "name"),
@@ -41,7 +45,9 @@ export async function createTournament(_: ActionState, f: FormData): Promise<Act
         branch: str(f, "branch"),
         city: str(f, "city") || null,
         format: str(f, "format"),
-        best_of: Number(str(f, "best_of")),
+        best_of: preset.bestOf,
+        sport: preset.sport,
+        rules: Object.keys(preset.overrides).length ? preset.overrides : null,
         status: "draft",
       }]).select("id"),
     );
@@ -185,6 +191,7 @@ export async function createTeam(_: ActionState, f: FormData): Promise<ActionSta
       province: str(f, "province") || null,
       color_primary: str(f, "color_primary") || "#1d4ed8",
       color_secondary: "#ffffff",
+      sport: str(f, "sport") === "ecuavoley" ? "ecuavoley" : "voley",
     }]));
     revalidatePath("/admin/equipos");
     return { error: null, ok: "Equipo creado." };

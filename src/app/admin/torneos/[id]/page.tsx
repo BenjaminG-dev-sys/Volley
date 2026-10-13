@@ -53,7 +53,12 @@ export default async function AdminTournament({ params }: { params: Promise<{ id
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader title="Equipos inscritos" sub={`${entries.length} equipos`} />
-          <EntriesEditor tournamentId={id} teams={teams} selected={entries.map((e) => e.team_id)} locked={locked} />
+          <EntriesEditor
+            tournamentId={id}
+            teams={teams.filter((t) => (t.sport ?? "voley") === (tournament.sport ?? "voley"))}
+            selected={entries.map((e) => e.team_id)}
+            locked={locked}
+          />
         </Card>
         <div className="space-y-6">
           <Card>

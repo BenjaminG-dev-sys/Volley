@@ -6,7 +6,7 @@ import { Badge, Card, LinkButton } from "@/components/ui";
 import { getMatchBundle } from "@/lib/data";
 import { fmtDateTime } from "@/lib/format";
 import { buildSetup, rowToEvent } from "@/lib/match";
-import { POSITION_LABELS, replay, type MatchEvent, type MatchSetup, type SetState, type Side } from "@/lib/scoresheet";
+import { describeRules, replay, rulesOf, type MatchEvent, type MatchSetup, type SetState, type Side } from "@/lib/scoresheet";
 import { STAGE_LABEL } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +29,7 @@ export default async function ScoresheetPage({ params }: { params: Promise<{ id:
   const bundle = await getMatchBundle((await params).id);
   if (!bundle) notFound();
   const { match, tournament, home, away, venue } = bundle;
-  const setup = buildSetup(tournament.best_of, home, away, bundle.homePlayers, bundle.awayPlayers);
+  const setup = buildSetup(tournament, home, away, bundle.homePlayers, bundle.awayPlayers);
   const events: MatchEvent[] = bundle.events.map(rowToEvent);
   const state = replay(setup, events);
   const sides: Side[] = ["A", "B"];
@@ -52,7 +52,7 @@ export default async function ScoresheetPage({ params }: { params: Promise<{ id:
       <Card className="print-sheet space-y-5 p-5 text-sm sm:p-8">
         <header className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-4">
           <div>
-            <p className="eyebrow text-muted">Planilla oficial de juego · Reglas FIVB</p>
+            <p className="eyebrow text-muted">Planilla oficial de juego · {setup.rules?.sport === "ecuavoley" ? "Ecuavóley" : "Reglas FIVB"}</p>
             <h1 className="display-m mt-2">
               {home.name} <span className="text-muted">vs</span> {away.name}
             </h1>
@@ -60,6 +60,7 @@ export default async function ScoresheetPage({ params }: { params: Promise<{ id:
               {tournament.name} · {STAGE_LABEL[match.stage]}
               {match.group_label ? ` ${match.group_label}` : ""} · {tournament.category}
             </p>
+            <p className="eyebrow mt-1 text-muted">{describeRules(rulesOf(setup))}</p>
           </div>
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
             <dt className="text-muted">Fecha</dt>
@@ -195,7 +196,8 @@ function Roster({ title, setup, side }: { title: string; setup: MatchSetup; side
 }
 
 function SetBlock({ set, setup, teamName }: { set: SetState; setup: MatchSetup; teamName: (s: Side) => string }) {
-  const target = set.no === setup.bestOf ? (setup.pointsDecidingSet ?? 15) : (setup.pointsPerSet ?? 25);
+  const rules = rulesOf(setup);
+  const target = set.no === setup.bestOf ? rules.pointsDecidingSet : rules.pointsPerSet;
   const maxPoints = Math.max(target, set.score.A, set.score.B);
   return (
     <section className="rounded-xl border border-line p-4">
@@ -209,7 +211,9 @@ function SetBlock({ set, setup, teamName }: { set: SetState; setup: MatchSetup; 
       <div className="grid gap-3 md:grid-cols-2">
         {(["A", "B"] as Side[]).map((s) => {
           const ts = set.teams[s];
-          const scored = set.rallies.filter((r) => r.winner === s);
+          // Con cambio de saque, las jugadas ganadas sin saque no suman punto.
+          const scored = set.rallies.filter((r) => r.winner === s && !r.sideout);
+          const sideouts = set.rallies.filter((r) => r.winner === s && r.sideout).length;
           return (
             <div key={s} className="space-y-2">
               <div className="flex items-center justify-between text-xs">
@@ -218,12 +222,13 @@ function SetBlock({ set, setup, teamName }: { set: SetState; setup: MatchSetup; 
                 </span>
                 <span className="text-muted">
                   T: {ts.timeouts} · S: {ts.substitutions}
+                  {rules.scoring === "sideout" && ` · Cambios: ${sideouts}`}
                 </span>
               </div>
               <table className="tabular w-full text-center text-xs">
                 <thead className="text-muted">
                   <tr>
-                    {POSITION_LABELS.map((p) => (
+                    {rules.positionLabels.map((p) => (
                       <th key={p} className="font-normal">
                         {p}
                       </th>

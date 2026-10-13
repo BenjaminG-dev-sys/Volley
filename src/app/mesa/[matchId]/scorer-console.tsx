@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Court } from "@/components/court";
 import { Scoreboard } from "@/components/scoreboard";
-import { CardIcon, UndoIcon } from "@/components/icons";
+import { CardIcon, TimeoutIcon, UndoIcon } from "@/components/icons";
+import { readableOn } from "@/lib/color";
 import { Badge, Button, Card, Field, LinkButton, cx, inputCls } from "@/components/ui";
 import type { MatchBundle } from "@/lib/data";
 import { insforge } from "@/lib/insforge/client";
@@ -13,9 +14,6 @@ import { enqueue, pending as loadPending, remove, type PendingRow } from "@/lib/
 import { fetchMatchEvents, subscribeMatch } from "@/lib/sync/match-channel";
 import { maxSeq, mergeRows, renumber, sameEvent, skipsAhead, stableStringify } from "@/lib/sync/rows";
 import {
-  MAX_SUBSTITUTIONS,
-  MAX_TIMEOUTS,
-  POSITION_LABELS,
   currentSet,
   legalSubstitutes,
   liberoTargets,
@@ -39,8 +37,8 @@ const isNetworkError = (e: { code?: string; message: string }) => !e.code || /fe
 export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
   const { match, tournament, home, away } = bundle;
   const setup = useMemo(
-    () => buildSetup(tournament.best_of, home, away, bundle.homePlayers, bundle.awayPlayers),
-    [tournament.best_of, home, away, bundle.homePlayers, bundle.awayPlayers],
+    () => buildSetup(tournament, home, away, bundle.homePlayers, bundle.awayPlayers),
+    [tournament, home, away, bundle.homePlayers, bundle.awayPlayers],
   );
   const colors: Record<Side, string> = { A: home.color_primary, B: away.color_primary };
 
@@ -408,8 +406,9 @@ function LineupEditor({ side, state, setup, onSubmit }: { side: Side; state: Mat
   const roster = setup.teams[side].players;
   const prev = state.sets[state.sets.length - 1]?.teams[side];
   const field = roster.filter((p) => !p.libero && !state.disqualified[side].includes(p.number));
-  const [positions, setPositions] = useState<number[]>(prev?.starters ?? field.slice(0, 6).map((p) => p.number));
-  const [liberos, setLiberos] = useState<number[]>(roster.filter((p) => p.libero).slice(0, 2).map((p) => p.number));
+  const { playersOnCourt, positionLabels, rotation, liberos: maxLiberos } = state.rules;
+  const [positions, setPositions] = useState<number[]>(prev?.starters ?? field.slice(0, playersOnCourt).map((p) => p.number));
+  const [liberos, setLiberos] = useState<number[]>(roster.filter((p) => p.libero).slice(0, maxLiberos).map((p) => p.number));
 
   return (
     <Card className="space-y-4 p-5">
@@ -417,8 +416,8 @@ function LineupEditor({ side, state, setup, onSubmit }: { side: Side; state: Mat
         Formación set {state.currentSet}: {setup.teams[side].name}
       </h3>
       <div className="grid grid-cols-3 gap-3">
-        {POSITION_LABELS.map((label, i) => (
-          <Field key={label} label={`Posición ${label}${i === 0 ? " (saque)" : ""}`}>
+        {positionLabels.map((label, i) => (
+          <Field key={label} label={rotation ? `Posición ${label}${i === 0 ? " (saque)" : ""}` : `${label}${i === 0 ? " (saca)" : ""}`}>
             <select
               className={inputCls}
               value={positions[i]}
@@ -433,6 +432,7 @@ function LineupEditor({ side, state, setup, onSubmit }: { side: Side; state: Mat
           </Field>
         ))}
       </div>
+      {maxLiberos > 0 && (
       <div className="flex flex-wrap gap-3 text-sm">
         <span className="font-medium">Líberos:</span>
         {roster
@@ -448,7 +448,8 @@ function LineupEditor({ side, state, setup, onSubmit }: { side: Side; state: Mat
             </label>
           ))}
       </div>
-      <Button className="w-full py-3" onClick={() => onSubmit({ type: "lineup", team: side, positions, liberos })}>
+      )}
+      <Button className="w-full py-3" onClick={() => onSubmit({ type: "lineup", team: side, positions, liberos: maxLiberos > 0 ? liberos : [] })}>
         Confirmar formación
       </Button>
     </Card>
@@ -484,13 +485,15 @@ function PlayingPanel({
     libero: set.teams[s].liberoOnCourt?.libero ?? null,
     serving: state.serving === s,
   });
+  // Con cambio de saque, ganar la jugada sin tener el saque solo lo recupera.
+  const winsServeOnly = (s: Side) => state.rules.scoring === "sideout" && state.serving !== s;
   const pointBtn = (s: Side) => (
     <button
       onClick={() => record({ type: "point", team: s })}
-      className="flex min-h-28 w-full flex-col items-center justify-center rounded-2xl px-3 py-5 font-display text-white shadow-lg transition active:scale-[0.98]"
-      style={{ background: colors[s] }}
+      className="flex min-h-28 w-full flex-col items-center justify-center rounded-2xl px-3 py-5 font-display shadow-lg transition active:scale-[0.98]"
+      style={{ background: colors[s], color: readableOn(colors[s]) }}
     >
-      <span className="text-sm uppercase tracking-widest opacity-90">Punto</span>
+      <span className="text-sm uppercase tracking-widest opacity-90">{winsServeOnly(s) ? "Gana la jugada · cambio" : "Punto"}</span>
       <span className="text-2xl font-extrabold sm:text-3xl">{setup.teams[s].name}</span>
     </button>
   );
@@ -506,10 +509,13 @@ function PlayingPanel({
         left={courtTeam(left)}
         right={courtTeam(right)}
         size="lg"
+        labels={state.rules.positionLabels}
         selected={selected}
         onPlayerClick={(side, number) => setSelected(selected?.side === side && selected.number === number ? null : { side, number })}
       />
-      <p className="text-center text-xs text-muted">Toca un jugador en la cancha para sustituirlo, cambiar el líbero o sancionarlo.</p>
+      <p className="text-center text-xs text-muted">
+        Toca un jugador en la cancha para sustituirlo{state.rules.liberos > 0 ? ", cambiar el líbero" : ""} o sancionarlo.
+      </p>
 
       {selected && <PlayerActions state={state} setup={setup} sel={selected} record={record} onClose={() => setSelected(null)} />}
 
@@ -524,20 +530,28 @@ function PlayingPanel({
 
 function TeamActions({ side, state, setup, record }: { side: Side; state: MatchState; setup: MatchSetup; record: (e: MatchEventInput) => void }) {
   const ts = currentSet(state)!.teams[side];
+  const { timeoutsPerSet, maxSubstitutions, timeoutsOnlyServing, scoring } = state.rules;
+  const timeoutBlocked = ts.timeouts >= timeoutsPerSet || (timeoutsOnlyServing && state.serving !== side);
   const confirmPenalty = () => {
-    if (confirm(`¿Castigo a ${setup.teams[side].name}? Otorga punto y saque al rival.`)) record({ type: "sanction", team: side, kind: "penalty" });
+    const effect = scoring === "sideout" ? "Otorga la jugada al rival." : "Otorga punto y saque al rival.";
+    if (confirm(`¿Castigo a ${setup.teams[side].name}? ${effect}`)) record({ type: "sanction", team: side, kind: "penalty" });
   };
   return (
     <Card className="space-y-3 p-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">{setup.teams[side].name}</h3>
         <span className="text-xs text-muted">
-          Tiempos {MAX_TIMEOUTS - ts.timeouts} · Sust. {MAX_SUBSTITUTIONS - ts.substitutions}
+          Tiempos {timeoutsPerSet - ts.timeouts} · Sust. {maxSubstitutions - ts.substitutions}
         </span>
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" disabled={ts.timeouts >= MAX_TIMEOUTS} onClick={() => record({ type: "timeout", team: side })}>
-          ⏱ Tiempo
+        <Button
+          variant="secondary"
+          disabled={timeoutBlocked}
+          title={timeoutsOnlyServing && state.serving !== side ? "Solo pide tiempo el equipo que tiene el saque" : undefined}
+          onClick={() => record({ type: "timeout", team: side })}
+        >
+          <TimeoutIcon size={16} /> Tiempo
         </Button>
         {ts.liberoOnCourt && (
           <Button variant="secondary" onClick={() => record({ type: "libero_out", team: side })}>
@@ -600,7 +614,7 @@ function PlayerActions({
       ) : (
         <>
           <div>
-            <p className="mb-2 text-sm font-medium">Sustitución ({MAX_SUBSTITUTIONS - ts.substitutions} restantes)</p>
+            <p className="mb-2 text-sm font-medium">Sustitución ({state.rules.maxSubstitutions - ts.substitutions} restantes)</p>
             <div className="flex flex-wrap gap-2">
               {subs.map((n) => (
                 <Button key={n} variant="secondary" onClick={() => record({ type: "substitution", team: sel.side, out: sel.number, in: n })}>

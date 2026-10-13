@@ -1,4 +1,5 @@
 import { LIBERO_EXIT_INDEX, isBackRow, rotate } from "./rotation";
+import { rulesOf } from "./rules";
 import {
   type MatchEventInput,
   type MatchSetup,
@@ -11,6 +12,7 @@ import {
   otherSide,
 } from "./types";
 
+/** Límites de vóley FIVB. Para el partido en curso usar `state.rules`. */
 export const MAX_TIMEOUTS = 2;
 export const MAX_SUBSTITUTIONS = 6;
 export const MAX_LIBEROS = 2;
@@ -18,9 +20,11 @@ export const MAX_LIBEROS = 2;
 export const setsToWin = (bestOf: 3 | 5) => Math.ceil(bestOf / 2);
 
 export function initialState(setup: MatchSetup): MatchState {
+  const rules = rulesOf(setup);
   return {
     phase: "coin_toss",
-    bestOf: setup.bestOf,
+    rules,
+    bestOf: rules.bestOf,
     setsWon: { A: 0, B: 0 },
     sets: [],
     currentSet: 1,
@@ -46,8 +50,8 @@ export function currentSet(state: MatchState): SetState | null {
 
 export const isDecidingSet = (state: MatchState, setNo = state.currentSet) => setNo === state.bestOf;
 
-export function targetPoints(setup: MatchSetup, state: MatchState, setNo = state.currentSet) {
-  return isDecidingSet(state, setNo) ? (setup.pointsDecidingSet ?? 15) : (setup.pointsPerSet ?? 25);
+export function targetPoints(_setup: MatchSetup, state: MatchState, setNo = state.currentSet) {
+  return isDecidingSet(state, setNo) ? state.rules.pointsDecidingSet : state.rules.pointsPerSet;
 }
 
 const SANCTION_LABEL: Record<ResolvedSanction, string> = {
@@ -78,6 +82,7 @@ export function applyEvent(
   const inRoster = (t: Side, n: number) => roster(t).some((p) => p.number === n);
   const isLibero = (t: Side, n: number) => roster(t).some((p) => p.number === n && p.libero);
   const set = currentSet(state);
+  const rules = state.rules;
   const log = (text: string) =>
     state.log.push({ seq, set: state.currentSet, text, score: set ? { ...set.score } : { A: 0, B: 0 } });
   const fail = (msg: string): never => {
@@ -103,14 +108,16 @@ export function applyEvent(
       if (state.phase !== "lineups") fail("La formación inicial solo se registra antes del set.");
       const { team, positions } = event;
       const liberos = event.liberos ?? [];
-      if (positions.length !== 6) fail("La formación debe tener 6 jugadores (posiciones I a VI).");
-      if (new Set(positions).size !== 6) fail("La formación tiene jugadores repetidos.");
+      const n = rules.playersOnCourt;
+      if (positions.length !== n)
+        fail(rules.rotation ? `La formación debe tener ${n} jugadores (posiciones I a VI).` : `La formación debe tener ${n} jugadores (${rules.positionLabels.join(", ")}).`);
+      if (new Set(positions).size !== n) fail("La formación tiene jugadores repetidos.");
       for (const n of positions) {
         if (!inRoster(team, n)) fail(`El N.º ${n} no está en la nómina de ${name(team)}.`);
         if (isLibero(team, n)) fail(`El N.º ${n} es líbero y no puede estar en la formación inicial.`);
         if (state.disqualified[team].includes(n)) fail(`El N.º ${n} está descalificado.`);
       }
-      if (liberos.length > MAX_LIBEROS) fail(`Máximo ${MAX_LIBEROS} líberos por equipo.`);
+      if (liberos.length > rules.liberos) fail(rules.liberos ? `Máximo ${rules.liberos} líberos por equipo.` : "Este modo de juego no usa líbero.");
       for (const l of liberos) {
         if (!isLibero(team, l)) fail(`El N.º ${l} no está registrado como líbero.`);
         if (state.disqualified[team].includes(l)) fail(`El N.º ${l} está descalificado.`);
@@ -130,10 +137,11 @@ export function applyEvent(
     case "timeout": {
       const s = requirePlaying();
       const ts = s.teams[event.team];
-      if (ts.timeouts >= MAX_TIMEOUTS)
-        fail(`${name(event.team)} ya usó sus ${MAX_TIMEOUTS} tiempos en este set.`);
+      if (ts.timeouts >= rules.timeoutsPerSet)
+        fail(`${name(event.team)} ya usó sus ${rules.timeoutsPerSet} tiempos en este set.`);
+      if (rules.timeoutsOnlyServing && state.serving !== event.team) fail("Solo el equipo que tiene el saque puede pedir tiempo.");
       ts.timeouts += 1;
-      log(`Tiempo para ${name(event.team)} (${ts.timeouts}/${MAX_TIMEOUTS})`);
+      log(`Tiempo para ${name(event.team)} (${ts.timeouts}/${rules.timeoutsPerSet})`);
       return state;
     }
 
@@ -141,8 +149,8 @@ export function applyEvent(
       const s = requirePlaying();
       const { team, out, in: inn } = event;
       const ts = s.teams[team];
-      if (ts.substitutions >= MAX_SUBSTITUTIONS)
-        fail(`${name(team)} ya usó ${MAX_SUBSTITUTIONS} sustituciones en este set.`);
+      if (ts.substitutions >= rules.maxSubstitutions)
+        fail(`${name(team)} ya usó ${rules.maxSubstitutions} sustituciones en este set.`);
       if (ts.liberoOnCourt?.replaced === out)
         fail(`El N.º ${out} está reemplazado por el líbero; primero debe salir el líbero.`);
       const idx = ts.positions.indexOf(out);
@@ -157,7 +165,9 @@ export function applyEvent(
 
       const pairAsStarter = ts.subPairs.find((p) => p.starter === out);
       const pairAsSub = ts.subPairs.find((p) => p.sub === out);
-      if (pairAsSub) {
+      if (rules.substitutionModel === "free") {
+        // Sustitución libre (ecuavóley): cualquier jugador de la banca por cualquiera en cancha.
+      } else if (pairAsSub) {
         // Sale un suplente: solo puede volver el titular al que reemplazó.
         if (pairAsSub.starter !== inn)
           fail(`El N.º ${out} solo puede ser reemplazado por el titular N.º ${pairAsSub.starter}.`);
@@ -172,7 +182,7 @@ export function applyEvent(
       }
       ts.positions[idx] = inn;
       ts.substitutions += 1;
-      log(`Sustitución ${name(team)}: sale ${out}, entra ${inn} (${ts.substitutions}/${MAX_SUBSTITUTIONS})`);
+      log(`Sustitución ${name(team)}: sale ${out}, entra ${inn} (${ts.substitutions}/${rules.maxSubstitutions})`);
       return state;
     }
 
@@ -180,6 +190,7 @@ export function applyEvent(
       const s = requirePlaying();
       const { team, libero, replaced } = event;
       const ts = s.teams[team];
+      if (!rules.liberos) fail("Este modo de juego no usa líbero.");
       if (!ts.liberos.includes(libero)) fail(`El N.º ${libero} no está registrado como líbero en este set.`);
       if (state.expelled[team].includes(libero) || state.disqualified[team].includes(libero))
         fail(`El líbero N.º ${libero} no puede jugar (sancionado).`);
@@ -325,27 +336,43 @@ function startSet(state: MatchState, seq: number, setup: MatchSetup) {
 
 function awardPoint(state: MatchState, team: Side, setup: MatchSetup, seq: number, bySanction: boolean) {
   const set = currentSet(state)!;
+  const rules = state.rules;
   const server = state.serving!;
   const serverNumber = set.teams[server].positions[0];
-  set.score[team] += 1;
-  set.rallies.push({ winner: team, server, serverNumber, score: { ...set.score }, bySanction });
+  const gainsServe = team !== server;
+  // Con cambio de saque solo suma quien sacó; el receptor que gana solo recupera el saque.
+  const scores = rules.scoring === "rally" || !gainsServe;
+  if (scores) set.score[team] += 1;
+  set.rallies.push({ winner: team, server, serverNumber, score: { ...set.score }, bySanction, ...(scores ? {} : { sideout: true }) });
 
-  if (team !== server) {
-    // Recupera el saque: rota. Si el líbero está en V pasaría a delantera, así que sale antes.
+  if (gainsServe) {
     const ts = set.teams[team];
-    if (ts.liberoOnCourt && ts.positions[LIBERO_EXIT_INDEX] === ts.liberoOnCourt.libero) {
-      ts.positions[LIBERO_EXIT_INDEX] = ts.liberoOnCourt.replaced;
-      state.log.push({
-        seq,
-        set: set.no,
-        text: `Líbero ${setup.teams[team].name}: sale ${ts.liberoOnCourt.libero} por rotación, vuelve ${ts.liberoOnCourt.replaced}`,
-        score: { ...set.score },
-      });
-      ts.liberoOnCourt = null;
-      ts.lastLiberoRally = set.rallies.length;
+    if (rules.rotation) {
+      // Recupera el saque: rota. Si el líbero está en V pasaría a delantera, así que sale antes.
+      if (ts.liberoOnCourt && ts.positions[LIBERO_EXIT_INDEX] === ts.liberoOnCourt.libero) {
+        ts.positions[LIBERO_EXIT_INDEX] = ts.liberoOnCourt.replaced;
+        state.log.push({
+          seq,
+          set: set.no,
+          text: `Líbero ${setup.teams[team].name}: sale ${ts.liberoOnCourt.libero} por rotación, vuelve ${ts.liberoOnCourt.replaced}`,
+          score: { ...set.score },
+        });
+        ts.liberoOnCourt = null;
+        ts.lastLiberoRally = set.rallies.length;
+      }
+      ts.positions = rotate(ts.positions);
     }
-    ts.positions = rotate(ts.positions);
     state.serving = team;
+  }
+
+  if (!scores) {
+    state.log.push({
+      seq,
+      set: set.no,
+      text: `${bySanction ? "Castigo: cambio" : "Cambio"} de saque para ${setup.teams[team].name} (${set.score.A}-${set.score.B})`,
+      score: { ...set.score },
+    });
+    return;
   }
 
   state.log.push({

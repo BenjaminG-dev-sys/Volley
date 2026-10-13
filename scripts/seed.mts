@@ -7,7 +7,7 @@ import { buildSetup, eventToRow, matchPatch } from "../src/lib/match";
 import { simulateMatch, rng } from "../src/lib/scoresheet/simulate";
 import { makeCedula } from "../src/lib/tournament/cedula";
 import { roundRobin, snakeGroups, groupLabel } from "../src/lib/tournament/scheduler";
-import type { PlayerPublic, Team } from "../src/lib/types";
+import type { PlayerPublic, Team, Tournament } from "../src/lib/types";
 
 const url = process.env.NEXT_PUBLIC_INSFORGE_URL;
 const apiKey = process.env.INSFORGE_API_KEY;
@@ -76,7 +76,7 @@ async function main() {
   );
 
   console.log("Torneo…");
-  const [tournament] = await q<{ id: string; best_of: 3 | 5 }[]>(
+  const [tournament] = await q<Pick<Tournament, "id" | "best_of" | "sport" | "rules">[]>(
     db.from("tournaments").insert([{
       organization_id: fed.id,
       name: "Campeonato Nacional Sub-19 Femenino 2026",
@@ -86,8 +86,9 @@ async function main() {
       city: "Quito",
       format: "groups_knockout",
       best_of: 5,
+      sport: "voley",
       status: "active",
-    }]).select("id, best_of"),
+    }]).select("id, best_of, sport, rules"),
     "tournament",
   );
 
@@ -96,6 +97,7 @@ async function main() {
     db.from("teams").insert(CLUBS.map((c) => ({
       organization_id: orgs[1 + ["Pichincha", "Guayas", "Azuay"].indexOf(c.province)].id, // -1 → federación
       name: c.name, short_name: c.short, city: c.city, province: c.province, color_primary: c.c1, color_secondary: c.c2,
+      sport: "voley",
     }))).select("*"),
     "teams",
   );
@@ -170,7 +172,7 @@ async function main() {
     if (!finished && !live) continue;
     if (live) liveDone = true;
 
-    const setup = buildSetup(tournament.best_of, team(m.home_team_id), team(m.away_team_id), byTeam(m.home_team_id), byTeam(m.away_team_id));
+    const setup = buildSetup(tournament, team(m.home_team_id), team(m.away_team_id), byTeam(m.home_team_id), byTeam(m.away_team_id));
     const pA = 0.5 + (rating(m.home_team_id) - rating(m.away_team_id)) * 0.6;
     const captain = (id: string) => {
       const c = byTeam(id).find((p) => p.is_captain)!;
@@ -188,7 +190,103 @@ async function main() {
     console.log(`  ${team(m.home_team_id).short_name} vs ${team(m.away_team_id).short_name}: ${live ? "EN VIVO" : `${state.setsWon.A}-${state.setsWon.B}`} (${rows.length} eventos)`);
   }
 
-  console.log(`Listo. Torneo ${tournament.id}`);
+  const ecuaId = await seedEcuavoley(orgs[1].id, venues[0].id);
+  console.log(`Listo. Torneos ${tournament.id} (vóley) y ${ecuaId} (ecuavóley)`);
+}
+
+// ---------- Ecuavóley: torneo interparroquial con 3 jugadores por equipo y cambio de saque ----------
+const PARISHES = [
+  { name: "Liga Parroquial Zámbiza", short: "Zámbiza", c1: "#0f766e", r: 0.56 },
+  { name: "Liga Parroquial Calderón", short: "Calderón", c1: "#b91c1c", r: 0.52 },
+  { name: "Liga Parroquial Cumbayá", short: "Cumbayá", c1: "#1d4ed8", r: 0.5 },
+  { name: "Liga Parroquial Llano Chico", short: "Llano Chico", c1: "#7c3aed", r: 0.46 },
+  { name: "Liga Parroquial Nayón", short: "Nayón", c1: "#ca8a04", r: 0.48 },
+  { name: "Liga Parroquial Tumbaco", short: "Tumbaco", c1: "#15803d", r: 0.53 },
+];
+const MEN = ["Carlos", "Luis", "Jorge", "Diego", "Andrés", "Fernando", "Pablo", "Santiago", "Javier", "Marco", "Byron", "Edison", "Wilson", "Patricio"];
+const ECUA_ROLES = ["servidor", "colocador", "volador", "servidor", "colocador", "volador", "colocador"] as const;
+
+async function seedEcuavoley(orgId: string, venueId: string) {
+  console.log("Ecuavóley: torneo interparroquial…");
+  const [t] = await q<Pick<Tournament, "id" | "best_of" | "sport" | "rules">[]>(
+    db.from("tournaments").insert([{
+      organization_id: orgId,
+      name: "Interparroquial de Ecuavóley 2026",
+      season: 2026,
+      category: "Mayores",
+      branch: "masculino",
+      city: "Quito",
+      format: "round_robin",
+      best_of: 3,
+      sport: "ecuavoley",
+      rules: null,
+      status: "active",
+    }]).select("id, best_of, sport, rules"),
+    "ecuavoley tournament",
+  );
+  const teams = await q<Team[]>(
+    db.from("teams").insert(PARISHES.map((p) => ({
+      organization_id: orgId, name: p.name, short_name: p.short, city: "Quito", province: "Pichincha",
+      color_primary: p.c1, color_secondary: "#ffffff", sport: "ecuavoley",
+    }))).select("*"),
+    "ecuavoley teams",
+  );
+  let serial = 900000;
+  const players = await q<PlayerPublic[]>(
+    db.from("players").insert(teams.flatMap((team) => Array.from({ length: 7 }, (_, i) => {
+      serial += 1 + Math.floor(rand() * 5000);
+      return {
+        team_id: team.id,
+        first_name: pick(MEN),
+        last_name: `${pick(LAST)} ${pick(LAST)}`,
+        cedula: makeCedula(17, serial),
+        birth_date: `${1985 + Math.floor(rand() * 15)}-0${1 + Math.floor(rand() * 9)}-1${Math.floor(rand() * 9)}`,
+        number: i + 1,
+        position: ECUA_ROLES[i],
+        is_libero: false,
+        is_captain: i === 0,
+      };
+    }))).select("*"),
+    "ecuavoley players",
+  );
+  await q(db.from("tournament_teams").insert(teams.map((team, i) => ({ tournament_id: t.id, team_id: team.id, seed: i + 1 }))), "ecuavoley entries");
+
+  const day0 = Date.UTC(2026, 9, 4, 15, 0); // domingos desde el 4 oct, 10:00 ECT
+  const slots = new Map<number, number>();
+  const matches = await q<{ id: string; home_team_id: string; away_team_id: string; round: number }[]>(
+    db.from("matches").insert(roundRobin(teams.map((x) => x.id)).map((f) => {
+      const slot = slots.get(f.round) ?? 0;
+      slots.set(f.round, slot + 1);
+      return {
+        tournament_id: t.id, stage: "league", round: f.round, home_team_id: f.home, away_team_id: f.away, venue_id: venueId,
+        scheduled_at: new Date(day0 + (f.round - 1) * 7 * 86400_000 + slot * 3600_000).toISOString(),
+      };
+    })).select("id, home_team_id, away_team_id, round"),
+    "ecuavoley matches",
+  );
+
+  const byTeam = (id: string) => players.filter((p) => p.team_id === id);
+  const team = (id: string) => teams.find((x) => x.id === id)!;
+  const rating = (id: string) => PARISHES[teams.findIndex((x) => x.id === id)].r;
+  let liveDone = false;
+  for (const [i, m] of matches.entries()) {
+    const finished = m.round <= 2;
+    const live = !finished && !liveDone;
+    if (!finished && !live) continue;
+    if (live) liveDone = true;
+    const setup = buildSetup(t, team(m.home_team_id), team(m.away_team_id), byTeam(m.home_team_id), byTeam(m.away_team_id));
+    const { events, state } = simulateMatch(setup, {
+      seed: 500 + i,
+      pA: 0.5 + (rating(m.home_team_id) - rating(m.away_team_id)) * 0.6,
+      stopAt: live ? { set: 2, points: 14 } : undefined,
+      signatures: { captainA: "Capitán local", captainB: "Capitán visitante", referee: REFEREES[i % REFEREES.length] },
+    });
+    const rows = events.map((e, k) => eventToRow(m.id, k + 1, e));
+    for (let k = 0; k < rows.length; k += 500) await q(db.from("match_events").insert(rows.slice(k, k + 500)), "match_events");
+    await q(db.from("matches").update(matchPatch(state, m.home_team_id, m.away_team_id)).eq("id", m.id), "match patch");
+    console.log(`  ${team(m.home_team_id).short_name} vs ${team(m.away_team_id).short_name}: ${live ? "EN VIVO" : `${state.setsWon.A}-${state.setsWon.B}`}`);
+  }
+  return t.id;
 }
 
 main().catch((e) => {

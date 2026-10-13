@@ -18,8 +18,8 @@ type Row = Pick<MatchBundle["events"][number], "seq" | "type" | "payload" | "cre
 export function LiveView({ bundle }: { bundle: MatchBundle }) {
   const { match, tournament, home, away, venue } = bundle;
   const setup = useMemo(
-    () => buildSetup(tournament.best_of, home, away, bundle.homePlayers, bundle.awayPlayers),
-    [tournament.best_of, home, away, bundle.homePlayers, bundle.awayPlayers],
+    () => buildSetup(tournament, home, away, bundle.homePlayers, bundle.awayPlayers),
+    [tournament, home, away, bundle.homePlayers, bundle.awayPlayers],
   );
   const [rows, setRows] = useState<Row[]>(bundle.events);
   const [connected, setConnected] = useState(false);
@@ -126,9 +126,9 @@ export function LiveView({ bundle }: { bundle: MatchBundle }) {
 
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
         <Card className="p-4 sm:p-5">
-          <h2 className="mb-4 font-display text-lg font-bold uppercase tracking-wide">Rotación en cancha</h2>
+          <h2 className="mb-4 font-display text-lg font-bold uppercase tracking-wide">{state.rules.rotation ? "Rotación en cancha" : "En cancha"}</h2>
           {set ? (
-            <Court left={courtTeam(state.leftTeam)} right={courtTeam(right)} />
+            <Court left={courtTeam(state.leftTeam)} right={courtTeam(right)} labels={state.rules.positionLabels} />
           ) : (
             <Empty>{state.phase === "closed" || state.phase === "finished" ? "Partido terminado." : "El set aún no comienza."}</Empty>
           )}

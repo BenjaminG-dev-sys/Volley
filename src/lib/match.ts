@@ -2,19 +2,18 @@
 // Convención: equipo A = local (home), equipo B = visitante (away).
 
 import {
-  MAX_SUBSTITUTIONS,
-  MAX_TIMEOUTS,
   currentSet,
+  resolveRules,
   type MatchEvent,
   type MatchEventInput,
   type MatchSetup,
   type MatchState,
   type Side,
 } from "@/lib/scoresheet";
-import type { MatchEventRow, MatchResult, PlayerPublic, Team } from "@/lib/types";
+import type { MatchEventRow, MatchResult, PlayerPublic, Team, Tournament } from "@/lib/types";
 
 export function buildSetup(
-  bestOf: 3 | 5,
+  tournament: Pick<Tournament, "best_of" | "sport" | "rules">,
   home: Pick<Team, "short_name" | "name">,
   away: Pick<Team, "short_name" | "name">,
   homePlayers: PlayerPublic[],
@@ -29,8 +28,12 @@ export function buildSetup(
         libero: p.is_libero,
         captain: p.is_captain,
       }));
+  const rules = resolveRules(tournament.sport ?? "voley", tournament.rules, tournament.best_of);
   return {
-    bestOf,
+    bestOf: rules.bestOf,
+    pointsPerSet: rules.pointsPerSet,
+    pointsDecidingSet: rules.pointsDecidingSet,
+    rules,
     teams: {
       A: { name: home.short_name || home.name, players: roster(homePlayers) },
       B: { name: away.short_name || away.name, players: roster(awayPlayers) },
@@ -74,12 +77,12 @@ export function toLiveState(state: MatchState): LiveState {
     serving: state.serving,
     leftTeam: state.leftTeam,
     timeoutsLeft: {
-      A: MAX_TIMEOUTS - (set?.teams.A.timeouts ?? 0),
-      B: MAX_TIMEOUTS - (set?.teams.B.timeouts ?? 0),
+      A: state.rules.timeoutsPerSet - (set?.teams.A.timeouts ?? 0),
+      B: state.rules.timeoutsPerSet - (set?.teams.B.timeouts ?? 0),
     },
     subsLeft: {
-      A: MAX_SUBSTITUTIONS - (set?.teams.A.substitutions ?? 0),
-      B: MAX_SUBSTITUTIONS - (set?.teams.B.substitutions ?? 0),
+      A: state.rules.maxSubstitutions - (set?.teams.A.substitutions ?? 0),
+      B: state.rules.maxSubstitutions - (set?.teams.B.substitutions ?? 0),
     },
     positions: set ? { A: set.teams.A.positions, B: set.teams.B.positions } : null,
     notice: state.notice,

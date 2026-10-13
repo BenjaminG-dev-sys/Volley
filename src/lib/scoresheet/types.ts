@@ -2,6 +2,8 @@
 // El estado del partido nunca se guarda directamente: se deriva de la lista
 // inmutable de eventos con `replay(setup, events)`.
 
+import type { RuleSet } from "./rules";
+
 export type Side = "A" | "B";
 
 export const otherSide = (s: Side): Side => (s === "A" ? "B" : "A");
@@ -19,6 +21,8 @@ export interface MatchSetup {
   pointsPerSet?: number;
   pointsDecidingSet?: number;
   teams: Record<Side, { name: string; players: RosterPlayer[] }>;
+  /** Reglamento (vóley FIVB si se omite). `bestOf` y los puntos de arriba tienen prioridad. */
+  rules?: RuleSet;
 }
 
 export type SanctionKind =
@@ -83,6 +87,8 @@ export interface Rally {
   score: Record<Side, number>;
   /** Punto otorgado por sanción (castigo) en lugar de jugada. */
   bySanction?: boolean;
+  /** Puntuación con cambio: el receptor ganó la jugada y solo recuperó el saque (sin punto). */
+  sideout?: boolean;
 }
 
 export interface SetState {
@@ -113,6 +119,8 @@ export interface LogEntry {
 
 export interface MatchState {
   phase: Phase;
+  /** Reglamento efectivo del partido (no cambia durante el partido). */
+  rules: RuleSet;
   bestOf: 3 | 5;
   setsWon: Record<Side, number>;
   sets: SetState[];
