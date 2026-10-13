@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Court } from "@/components/court";
 import { Scoreboard } from "@/components/scoreboard";
+import { CardIcon, UndoIcon } from "@/components/icons";
 import { Badge, Button, Card, Field, LinkButton, cx, inputCls } from "@/components/ui";
 import type { MatchBundle } from "@/lib/data";
 import { insforge } from "@/lib/insforge/client";
@@ -267,7 +268,7 @@ export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
             Marcador público ↗
           </LinkButton>
           <Button variant="secondary" onClick={() => record({ type: "undo" })} disabled={undoDepth === 0}>
-            ↶ Deshacer
+            <UndoIcon size={16} /> Deshacer
           </Button>
         </div>
       </div>
@@ -302,7 +303,7 @@ export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
 
       <Scoreboard state={state} teams={{ A: { name: name("A"), color: colors.A }, B: { name: name("B"), color: colors.B } }} compact />
 
-      {state.notice && <div className="rounded-xl bg-accent/20 px-4 py-2 text-center font-semibold">{state.notice}</div>}
+      {state.notice && <div className="rounded-xl bg-sun px-4 py-2 text-center font-semibold text-black">{state.notice}</div>}
       {toast && (
         <div role="alert" className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-lg rounded-xl bg-live px-4 py-3 text-center font-medium text-white shadow-lg">
           {toast}
@@ -547,10 +548,10 @@ function TeamActions({ side, state, setup, record }: { side: Side; state: MatchS
           Retraso
         </Button>
         <Button variant="secondary" onClick={() => record({ type: "sanction", team: side, kind: "warning" })}>
-          🟨 Amonestación
+          <CardIcon color="#ffd100" /> Amonestación
         </Button>
         <Button variant="secondary" onClick={confirmPenalty}>
-          🟥 Castigo
+          <CardIcon color="#d0002a" /> Castigo
         </Button>
       </div>
     </Card>
@@ -623,10 +624,10 @@ function PlayerActions({
 
       <div className="flex flex-wrap gap-2 border-t border-line pt-3">
         <Button variant="secondary" onClick={() => sanction("warning")}>
-          🟨 Amonestación
+          <CardIcon color="#ffd100" /> Amonestación
         </Button>
         <Button variant="secondary" onClick={() => sanction("penalty")}>
-          🟥 Castigo
+          <CardIcon color="#d0002a" /> Castigo
         </Button>
         <Button variant="secondary" onClick={() => sanction("expulsion")}>
           Expulsión

@@ -1,5 +1,6 @@
 import { MAX_SUBSTITUTIONS, MAX_TIMEOUTS, currentSet, type MatchState, type Side } from "@/lib/scoresheet";
 import { cx } from "@/components/ui";
+import { ServeIcon } from "@/components/icons";
 
 export interface ScoreTeam {
   name: string;
@@ -14,7 +15,7 @@ export function Scoreboard({ state, teams, compact }: { state: MatchState; teams
   const score = set?.score ?? (state.phase === "finished" || state.phase === "closed" ? lastSet?.score : null) ?? { A: 0, B: 0 };
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-[#0b1020] text-white shadow-lg">
+    <div className="overflow-hidden rounded-2xl bg-black text-white ring-1 ring-white/10">
       <div className="grid grid-cols-[1fr_auto_1fr] items-stretch">
         {order.map((side, i) => {
           const t = teams[side];
@@ -24,7 +25,12 @@ export function Scoreboard({ state, teams, compact }: { state: MatchState; teams
               <div className={cx("flex items-center gap-2", i === 1 && "flex-row-reverse")}>
                 <span className="h-4 w-4 rounded-full ring-2 ring-white/30" style={{ background: t.color }} />
                 <span className={cx("font-display font-bold uppercase tracking-wide", compact ? "text-lg" : "text-xl sm:text-3xl")}>{t.name}</span>
-                {state.serving === side && <span title="Saque" className="text-lg">🏐</span>}
+                {state.serving === side && (
+                  <span title="Saque" className="text-volt">
+                    <ServeIcon size={22} />
+                    <span className="sr-only">Saque</span>
+                  </span>
+                )}
               </div>
               <div className={cx("flex items-end gap-4", i === 1 && "flex-row-reverse")}>
                 <span className={cx("tabular font-display font-extrabold leading-none", compact ? "text-6xl" : "text-7xl sm:text-9xl")}>

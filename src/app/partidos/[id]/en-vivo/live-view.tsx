@@ -91,7 +91,7 @@ export function LiveView({ bundle }: { bundle: MatchBundle }) {
       <Scoreboard state={state} teams={teams} />
 
       {state.notice && (
-        <div className="rounded-xl bg-accent/15 px-4 py-3 text-center font-display text-lg font-semibold">{state.notice}</div>
+        <div className="rounded-xl bg-sun px-4 py-3 text-center font-display text-lg font-bold uppercase text-black">{state.notice}</div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">

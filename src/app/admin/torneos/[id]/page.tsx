@@ -134,7 +134,7 @@ function MatchEditor({
             Final {m.result?.home_sets}-{m.result?.away_sets}
           </Badge>
         )}
-        <Link className="ml-auto text-xs text-primary hover:underline" href={`/mesa/${m.id}`}>
+        <Link className="ml-auto text-xs font-medium underline-offset-2 hover:underline" href={`/mesa/${m.id}`}>
           Abrir mesa
         </Link>
       </div>

@@ -1,5 +1,6 @@
 import { POSITION_LABELS, type Side } from "@/lib/scoresheet";
 import { cx } from "@/components/ui";
+import { ServeIcon } from "@/components/icons";
 
 // Media cancha vista desde la mesa. Índices 0..5 = posiciones I..VI.
 // Equipo a la izquierda (mira a la derecha): columna delantera junto a la red IV/III/II (arriba→abajo),
@@ -90,8 +91,8 @@ function Half({
                 {n}
                 <span className="text-[10px] font-medium opacity-80">{POSITION_LABELS[idx]}</span>
                 {isServer && (
-                  <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-accent text-[11px] shadow" title="Saca">
-                    🏐
+                  <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-volt text-black shadow" title="Saca">
+                    <ServeIcon size={13} strokeWidth={2.4} />
                   </span>
                 )}
               </El>
