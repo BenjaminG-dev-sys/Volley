@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Court } from "@/components/court";
 import { Scoreboard } from "@/components/scoreboard";
 import { Badge, Card, CardHeader, Empty, LinkButton, LiveBadge } from "@/components/ui";
 import type { MatchBundle } from "@/lib/data";
 import { fmtDateTime } from "@/lib/format";
-import { insforge } from "@/lib/insforge/client";
 import { buildSetup, rowToEvent } from "@/lib/match";
 import { currentSet, replay, type MatchEvent } from "@/lib/scoresheet";
+import { fetchMatchEvents, subscribeMatch } from "@/lib/sync/match-channel";
+import { mergeRows, skipsAhead } from "@/lib/sync/rows";
 import { STAGE_LABEL } from "@/lib/types";
 
 type Row = Pick<MatchBundle["events"][number], "seq" | "type" | "payload" | "created_at">;
@@ -23,25 +24,40 @@ export function LiveView({ bundle }: { bundle: MatchBundle }) {
   const [rows, setRows] = useState<Row[]>(bundle.events);
   const [connected, setConnected] = useState(false);
 
+  const rowsRef = useRef(rows);
+  rowsRef.current = rows;
+
   useEffect(() => {
-    const rt = insforge().realtime;
-    const channel = `match:${match.id}`;
-    const onEvent = (msg: Row & { meta?: { channel?: string } }) => {
-      // InsForge antepone "realtime:" al nombre del canal en meta.channel.
-      if (msg.meta?.channel && msg.meta.channel.replace(/^realtime:/, "") !== channel) return;
-      setRows((prev) => (prev.some((r) => r.seq === msg.seq) ? prev : [...prev, msg].sort((a, b) => a.seq - b.seq)));
+    let alive = true;
+    let resyncing = false;
+    // Relee la planilla completa: los mensajes emitidos durante un corte no se reenvían.
+    const resync = async () => {
+      if (resyncing) return;
+      resyncing = true;
+      try {
+        const server = await fetchMatchEvents(match.id);
+        if (alive) setRows((prev) => mergeRows(prev, server as Row[]));
+      } catch {
+        // Se reintenta en la próxima reconexión o en el próximo hueco detectado.
+      } finally {
+        resyncing = false;
+      }
     };
-    const onConnect = () => setConnected(true);
-    const onDisconnect = () => setConnected(false);
-    rt.on("event", onEvent);
-    rt.on("connect", onConnect);
-    rt.on("disconnect", onDisconnect);
-    rt.subscribe(channel).then((r) => setConnected(Boolean(r.ok))).catch(() => setConnected(false));
+    const unsubscribe = subscribeMatch(match.id, {
+      onEvent: (row) => {
+        const gap = skipsAhead(rowsRef.current, row.seq);
+        setRows((prev) => mergeRows(prev, [row as Row]));
+        if (gap) void resync();
+      },
+      onConnect: () => {
+        setConnected(true);
+        void resync();
+      },
+      onDisconnect: () => setConnected(false),
+    });
     return () => {
-      rt.off("event", onEvent);
-      rt.off("connect", onConnect);
-      rt.off("disconnect", onDisconnect);
-      rt.unsubscribe(channel);
+      alive = false;
+      unsubscribe();
     };
   }, [match.id]);
 

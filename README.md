@@ -35,10 +35,13 @@ y **planilla electrónica** para la mesa de control, con marcador público en ti
 - **Realtime**: triggers en `matches` y `match_events` publican en `match:{id}` y `live`; los clientes no pueden
   publicar (RLS en `realtime.messages`).
 - **Offline**: la mesa guarda cada evento primero en IndexedDB y lo sincroniza en orden al volver la conexión
-  (los reintentos no duplican gracias a `UNIQUE (match_id, seq)`).
+  (los reintentos no duplican gracias a `UNIQUE (match_id, seq)`). Si otro dispositivo ocupó la misma secuencia, la mesa
+  lo detecta, adopta la planilla del servidor y ofrece reaplicar o descartar sus acciones; la consola y el marcador
+  público escuchan `match:{id}` y releen la planilla al reconectarse.
 - **Seguridad (RLS)**: lectura pública de información deportiva; escritura solo para staff; la planilla solo la
   escribe el planillero asignado; la cédula y la fecha de nacimiento solo las ve el staff (el público lee la vista
-  `players_public`).
+  `players_public`). El servidor valida el resultado que publica la mesa (marcadores posibles, sets ganados), deriva el
+  ganador y solo acepta cerrar el partido si la planilla tiene el evento `close`.
 
 ### Reglas FIVB implementadas (`src/lib/scoresheet/`)
 
