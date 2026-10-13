@@ -52,8 +52,8 @@ export default async function ScoresheetPage({ params }: { params: Promise<{ id:
       <Card className="print-sheet space-y-5 p-5 text-sm sm:p-8">
         <header className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-4">
           <div>
-            <p className="text-xs uppercase tracking-widest text-muted">Planilla oficial de juego · Reglas FIVB</p>
-            <h1 className="font-display text-2xl font-bold">
+            <p className="eyebrow text-muted">Planilla oficial de juego · Reglas FIVB</p>
+            <h1 className="display-m mt-2">
               {home.name} <span className="text-muted">vs</span> {away.name}
             </h1>
             <p className="text-muted">
@@ -87,7 +87,7 @@ export default async function ScoresheetPage({ params }: { params: Promise<{ id:
         {!state.sets.length && <p className="text-muted">El partido aún no ha comenzado.</p>}
 
         <section>
-          <h2 className="mb-2 font-semibold">Sanciones</h2>
+          <h2 className="mb-2 font-display text-base font-bold uppercase tracking-wide">Sanciones</h2>
           {state.sanctions.length ? (
             <table className="w-full text-xs">
               <thead className="text-left text-muted">
@@ -120,7 +120,7 @@ export default async function ScoresheetPage({ params }: { params: Promise<{ id:
 
         <section className="grid gap-4 border-t border-line pt-4 md:grid-cols-2">
           <div>
-            <h2 className="mb-2 font-semibold">Resultado</h2>
+            <h2 className="mb-2 font-display text-base font-bold uppercase tracking-wide">Resultado</h2>
             <table className="tabular w-full text-sm">
               <thead className="text-left text-xs text-muted">
                 <tr>
@@ -153,7 +153,7 @@ export default async function ScoresheetPage({ params }: { params: Promise<{ id:
             )}
           </div>
           <div>
-            <h2 className="mb-2 font-semibold">Firmas</h2>
+            <h2 className="mb-2 font-display text-base font-bold uppercase tracking-wide">Firmas</h2>
             <dl className="space-y-3 text-sm">
               {[
                 [`Capitán(a) ${home.short_name}`, state.signatures?.captainA],
@@ -176,7 +176,7 @@ export default async function ScoresheetPage({ params }: { params: Promise<{ id:
 function Roster({ title, setup, side }: { title: string; setup: MatchSetup; side: Side }) {
   return (
     <div>
-      <h2 className="mb-2 font-semibold">{title}</h2>
+      <h2 className="mb-2 font-display text-base font-bold uppercase tracking-wide">{title}</h2>
       <table className="w-full text-xs">
         <tbody className="tabular">
           {setup.teams[side].players.map((p) => (
@@ -198,10 +198,10 @@ function SetBlock({ set, setup, teamName }: { set: SetState; setup: MatchSetup; 
   const target = set.no === setup.bestOf ? (setup.pointsDecidingSet ?? 15) : (setup.pointsPerSet ?? 25);
   const maxPoints = Math.max(target, set.score.A, set.score.B);
   return (
-    <section className="rounded-lg border border-line p-3">
+    <section className="rounded-xl border border-line p-4">
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="font-semibold">Set {set.no}</h2>
-        <span className="tabular font-display text-lg font-bold">
+        <h2 className="font-display text-xl font-extrabold uppercase">Set {set.no}</h2>
+        <span className="tabular font-display text-2xl font-extrabold">
           {set.score.A} - {set.score.B}
           {set.winner && <span className="ml-2 text-sm font-normal text-muted">gana {teamName(set.winner)}</span>}
         </span>

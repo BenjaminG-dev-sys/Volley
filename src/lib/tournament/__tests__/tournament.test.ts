@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { validateCategoryAge } from "../categories";
 import { cedulaCheckDigit, makeCedula, validateCedula } from "../cedula";
 import { crossSemis, roundRobin, snakeGroups } from "../scheduler";
+import { recentForm } from "../form";
 import { computeStandings, matchPoints } from "../standings";
 
 describe("cédula ecuatoriana", () => {
@@ -80,5 +81,21 @@ describe("tabla de posiciones FIVB", () => {
     expect(byId.z.points).toBe(4);
     expect(table.map((r) => r.teamId)).toEqual(["z", "x", "y"]);
     expect(byId.y).toMatchObject({ played: 2, won: 1, lost: 1, setsWon: 3, setsLost: 5 });
+  });
+});
+
+describe("forma reciente", () => {
+  const m = (home: string, away: string, day: number, hs: number, as: number) => ({
+    home,
+    away,
+    scheduledAt: `2026-10-${String(day).padStart(2, "0")}T15:00:00Z`,
+    homeSets: hs,
+    awaySets: as,
+  });
+  it("devuelve los últimos resultados en orden cronológico", () => {
+    const ms = [m("a", "b", 5, 3, 1), m("c", "a", 1, 3, 0), m("a", "d", 9, 2, 3), m("b", "c", 3, 3, 0)];
+    expect(recentForm("a", ms)).toEqual(["P", "G", "P"]);
+    expect(recentForm("a", ms, 2)).toEqual(["G", "P"]);
+    expect(recentForm("z", ms)).toEqual([]);
   });
 });

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Court } from "@/components/court";
 import { Scoreboard } from "@/components/scoreboard";
-import { Badge, Card, CardHeader, Empty, LinkButton, LiveBadge } from "@/components/ui";
+import { Badge, Button, Card, CardHeader, Empty, LinkButton, LiveBadge, cx } from "@/components/ui";
 import type { MatchBundle } from "@/lib/data";
 import { fmtDateTime } from "@/lib/format";
 import { buildSetup, rowToEvent } from "@/lib/match";
@@ -67,67 +67,81 @@ export function LiveView({ bundle }: { bundle: MatchBundle }) {
   const teams = { A: { name: setup.teams.A.name, color: home.color_primary }, B: { name: setup.teams.B.name, color: away.color_primary } };
   const isLive = state.phase !== "closed" && rows.length > 0;
   const ticker = [...state.log].reverse().slice(0, 40);
+  const right = state.leftTeam === "A" ? "B" : "A";
+  const courtTeam = (side: "A" | "B") => ({
+    side,
+    name: teams[side].name,
+    color: teams[side].color,
+    positions: set!.teams[side].positions,
+    libero: set!.teams[side].liberoOnCourt?.libero,
+    serving: state.serving === side,
+  });
+
+  const stage = useRef<HTMLDivElement>(null);
+  const fullscreen = () => {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void stage.current?.requestFullscreen?.();
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="text-sm text-muted">
-          <Link href={`/torneos/${tournament.id}`} className="font-medium text-ink hover:underline">
-            {tournament.name}
-          </Link>{" "}
-          · {STAGE_LABEL[match.stage]}
-          {match.group_label ? ` ${match.group_label}` : ""} · {fmtDateTime(match.scheduled_at)}
-          {venue ? ` · ${venue.name}, ${venue.city}` : ""}
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          <p className="eyebrow mb-2 text-muted">
+            <Link href={`/torneos/${tournament.id}`} className="underline-anim">
+              {tournament.name}
+            </Link>{" "}
+            · {STAGE_LABEL[match.stage]}
+            {match.group_label ? ` ${match.group_label}` : ""}
+          </p>
+          <h1 className="display-m">
+            {home.short_name} <span className="text-muted">vs</span> {away.short_name}
+          </h1>
+          <p className="mt-1 text-sm text-muted">
+            {fmtDateTime(match.scheduled_at)}
+            {venue ? ` · ${venue.name}, ${venue.city}` : ""}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {isLive ? <LiveBadge /> : state.phase === "closed" ? <Badge tone="ok">Finalizado</Badge> : <Badge>Programado</Badge>}
-          <Badge tone={connected ? "ok" : "neutral"}>{connected ? "Conectado en tiempo real" : "Conectando…"}</Badge>
+          <span className="flex items-center gap-1.5 text-xs text-muted" title={connected ? "Conectado en tiempo real" : "Conectando…"}>
+            <span className={cx("h-2 w-2 rounded-full", connected ? "bg-ok" : "bg-line")} />
+            {connected ? "Tiempo real" : "Conectando…"}
+          </span>
+          <Button variant="secondary" onClick={fullscreen}>
+            Pantalla completa
+          </Button>
           <LinkButton variant="secondary" href={`/partidos/${match.id}/planilla`}>
             Ver planilla
           </LinkButton>
         </div>
       </div>
 
-      <Scoreboard state={state} teams={teams} />
-
-      {state.notice && (
-        <div className="rounded-xl bg-sun px-4 py-3 text-center font-display text-lg font-bold uppercase text-black">{state.notice}</div>
-      )}
+      <div ref={stage} className="scoreboard-stage space-y-4">
+        <Scoreboard state={state} teams={teams} size="big" />
+        {state.notice && (
+          <div className="rounded-2xl bg-sun px-4 py-3 text-center font-display text-xl font-extrabold uppercase text-black">{state.notice}</div>
+        )}
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
-        <Card className="p-4">
-          <h2 className="mb-3 font-semibold">Rotación en cancha</h2>
+        <Card className="p-4 sm:p-5">
+          <h2 className="mb-4 font-display text-lg font-bold uppercase tracking-wide">Rotación en cancha</h2>
           {set ? (
-            <Court
-              left={{
-                side: state.leftTeam,
-                name: teams[state.leftTeam].name,
-                color: teams[state.leftTeam].color,
-                positions: set.teams[state.leftTeam].positions,
-                libero: set.teams[state.leftTeam].liberoOnCourt?.libero,
-                serving: state.serving === state.leftTeam,
-              }}
-              right={{
-                side: state.leftTeam === "A" ? "B" : "A",
-                name: teams[state.leftTeam === "A" ? "B" : "A"].name,
-                color: teams[state.leftTeam === "A" ? "B" : "A"].color,
-                positions: set.teams[state.leftTeam === "A" ? "B" : "A"].positions,
-                libero: set.teams[state.leftTeam === "A" ? "B" : "A"].liberoOnCourt?.libero,
-                serving: state.serving === (state.leftTeam === "A" ? "B" : "A"),
-              }}
-            />
+            <Court left={courtTeam(state.leftTeam)} right={courtTeam(right)} />
           ) : (
             <Empty>{state.phase === "closed" || state.phase === "finished" ? "Partido terminado." : "El set aún no comienza."}</Empty>
           )}
         </Card>
-        <Card className="flex max-h-[520px] flex-col">
+        <Card className="flex max-h-[560px] flex-col overflow-hidden">
           <CardHeader title="Jugada a jugada" />
           <ol className="flex-1 divide-y divide-line overflow-y-auto text-sm">
             {ticker.map((l, i) => (
-              <li key={`${l.seq}-${i}`} className="flex items-center justify-between gap-3 px-4 py-2">
+              <li key={`${l.seq}-${i}`} className={cx("flex items-center justify-between gap-3 px-4 py-2.5 sm:px-5", i === 0 && "bg-surface-2 font-semibold")}>
                 <span>{l.text}</span>
-                <span className="tabular shrink-0 text-xs text-muted">
-                  S{l.set} · {l.score.A}-{l.score.B}
+                <span className="tabular shrink-0 font-display text-sm font-bold">
+                  <span className="mr-1 text-muted">S{l.set}</span>
+                  {l.score.A}-{l.score.B}
                 </span>
               </li>
             ))}

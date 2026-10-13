@@ -1,6 +1,7 @@
 import { POSITION_LABELS, type Side } from "@/lib/scoresheet";
 import { cx } from "@/components/ui";
 import { ServeIcon } from "@/components/icons";
+import { readableOn } from "@/lib/color";
 
 // Media cancha vista desde la mesa. Índices 0..5 = posiciones I..VI.
 // Equipo a la izquierda (mira a la derecha): columna delantera junto a la red IV/III/II (arriba→abajo),
@@ -82,10 +83,9 @@ function Half({
                   onPlayerClick && "hover:scale-105",
                 )}
                 style={{
-                  background: isLibero ? "#111827" : team.color,
-                  color: isLibero ? "#fde047" : "#fff",
-                  textShadow: "0 1px 2px rgba(0,0,0,.35)",
-                }}
+                  background: isLibero ? "#111111" : team.color,
+                  color: isLibero ? "#d4ff3a" : readableOn(team.color),
+                                  }}
                 aria-label={`Posición ${POSITION_LABELS[idx]}: N.º ${n}${isServer ? ", saca" : ""}${isLibero ? ", líbero" : ""}`}
               >
                 {n}
