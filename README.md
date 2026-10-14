@@ -1,9 +1,7 @@
 # Gestión de Torneos de Voleibol
 
-Demo full stack para ligas parroquiales y cantonales de Ecuador: torneos, calendario, tabla de posiciones
+Demo full stack para ligas y asociaciones de voleibol en Ecuador: torneos, calendario, tabla de posiciones FIVB
 y **planilla electrónica** para la mesa de control, con marcador público en tiempo real.
-Los datos de la demo son **solo de ecuavóley** (torneo "Interparroquial de Ecuavóley 2026"); el sistema también
-admite vóley FIVB, y el deporte se elige al crear cada torneo.
 
 **Demo en la nube:** https://my4nm2i7.insforge.site
 
@@ -16,26 +14,16 @@ admite vóley FIVB, y el deporte se elige al crear cada torneo.
 
 ## Guion de demostración (≈5 min)
 
-`npm run seed` crea el torneo con 8 ligas parroquiales en dos grupos, 6 jugadores por equipo
-(servidor, colocador y volador más suplentes). Las fechas son relativas al día en que se ejecuta:
-
-- jornadas 1 y 2: terminadas (hace 14 y 7 días);
-- jornada 3 (hoy): un partido **en vivo** a las 10:00, el **partido demo** a las 11:30 sin empezar, y el resto programados.
-
-1. **Portada** (`/`): partido en vivo, torneo, próximos partidos y resultados.
-2. **Torneo** → tablas de los grupos A y B y calendario por jornada.
+1. **Portada** (`/`): partido en vivo, torneos, próximos partidos y resultados.
+2. **Torneo** → tablas de los grupos A y B (puntos FIVB 3/2/1, cocientes de sets y puntos), calendario por jornada.
 3. Abre el **marcador en vivo** del partido en juego en una pantalla grande (sin sesión).
-4. En otra pestaña o tablet, ingresa como `planillero@demo.ec` → **Mesa** → *Abrir planilla* del partido demo:
-   - Sorteo y formación con roles (Servidor, Colocador, Volador).
-   - Anota con **cambio de saque**: solo suma quien saca, y si gana el que recibe solo recupera el saque.
-   - Pide un tiempo (solo el equipo que saca), haz una sustitución libre y usa **Deshacer**.
-   - El marcador público cambia al instante, sin recargar.
-5. Termina el set a 15 (diferencia de 2): cambio de cancha y formación del siguiente set; se juega al mejor de 3.
+4. En otra pestaña o tablet, ingresa como `planillero@demo.ec` → **Mesa** → *Continuar planilla*.
+   Anota puntos, pide un tiempo, toca un jugador para sustituirlo o hacer entrar al líbero, y usa **Deshacer**.
+   El marcador público cambia al instante, sin recargar.
+5. Termina el set: el sistema aplica el cambio de cancha, alterna el saque y pide las formaciones del siguiente set.
 6. Al terminar el partido: firmas → **Planilla final** imprimible (Imprimir / PDF).
-7. Como `organizador@demo.ec` → **Admin**:
-   - inscripción de equipos y generador de calendario;
-   - asignación de planillero y árbitros;
-   - nóminas con validación de cédula (hasta 7 jugadores en ecuavóley).
+7. Como `organizador@demo.ec` → **Admin**: inscripción de equipos, generador de calendario, asignación de
+   planillero y árbitros, nóminas con validación de cédula y edad por categoría.
 
 ## Arquitectura
 
@@ -119,7 +107,7 @@ npm run dev                  # http://localhost:3000
 |---|---|
 | `npm test` | Pruebas del motor de reglas, calendario, posiciones y cédula (Vitest) |
 | `npm run lint` / `npm run build` | Lint y compilación de producción |
-| `npm run seed` | Reemplaza los datos demo: Interparroquial de Ecuavóley (8 ligas parroquiales, 48 jugadores, 2 grupos), con partidos simulados con el motor, uno en vivo y un partido demo sin empezar |
+| `npm run seed` | Reemplaza los datos demo: torneo de vóley (8 clubes, 96 jugadoras) e interparroquial de ecuavóley (6 parroquias), con partidos simulados con el motor |
 | `npm run seed:users` | Crea/actualiza los usuarios demo y asigna al planillero los partidos pendientes |
 | `npm run test:e2e` | Playwright: flujo de mesa + marcador en vivo y panel de admin (`BASE_URL` para apuntar a la nube). Modifica datos: luego `npm run seed && npm run seed:users` |
 
