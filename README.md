@@ -118,6 +118,11 @@ Despliegue: `npx -y @insforge/cli deployments deploy .` (variables `NEXT_PUBLIC_
 > porque las cuentas `@demo.ec` no reciben correo. Antes de producción conviene volver a activarla y aplicar con
 > `npx -y @insforge/cli config apply`.
 
+## Video de presentación
+
+En `video/` hay un proyecto Remotion independiente con el video promocional (ver `video/README.md`).
+No forma parte del build ni del despliegue de la app.
+
 ## Fuera del alcance de esta demo
 
 Ecuavóley, vóley playa, estadísticas por jugadora, pagos de inscripción, protestas y sustituciones excepcionales,
