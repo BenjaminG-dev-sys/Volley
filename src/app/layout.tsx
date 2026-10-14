@@ -23,7 +23,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const role = session?.profile?.role;
   const canScore = role === "scorer" || isStaff(session);
 
-  const items: NavItem[] = [{ href: "/", label: "Inicio" }];
+  const items: NavItem[] = [
+    { href: "/", label: "Inicio" },
+    { href: "/equipos", label: "Equipos" },
+  ];
   if (canScore) items.push({ href: "/mesa", label: "Mesa" });
   if (isStaff(session)) items.push({ href: "/admin", label: "Admin" });
   const user = session ? { name: session.profile?.display_name || session.email, role: ROLE_LABEL[role ?? "viewer"] } : null;
@@ -70,6 +73,9 @@ function SiteFooter() {
           </Link>
           <Link className={`block ${link}`} href="/#en-vivo">
             Partidos en vivo
+          </Link>
+          <Link className={`block ${link}`} href="/equipos">
+            Equipos y nóminas
           </Link>
         </nav>
         <nav aria-label="Equipo de mesa" className="space-y-3 text-sm">

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { TeamCrest, cx } from "@/components/ui";
 import type { FormResult } from "@/lib/tournament/form";
 import { type StandingRow, formatRatio } from "@/lib/tournament/standings";
@@ -44,13 +45,13 @@ export function StandingsTable({
                   <span className="font-display text-2xl font-extrabold">{i + 1}</span>
                 </td>
                 <td className="py-3">
-                  <span className="flex items-center gap-3">
+                  <Link href={`/equipos/${r.teamId}`} className="group flex items-center gap-3">
                     <TeamCrest name={t?.name ?? "—"} color={t?.color_primary ?? "#999"} logo={t?.logo_url} size="sm" />
                     <span className="min-w-0">
-                      <span className="block font-semibold">{t?.short_name ?? "—"}</span>
+                      <span className="block font-semibold group-hover:underline">{t?.short_name ?? "—"}</span>
                       <span className="hidden truncate text-xs text-muted lg:block">{t?.name}</span>
                     </span>
-                  </span>
+                  </Link>
                 </td>
                 <td className="px-2 py-3 text-center">{r.played}</td>
                 <td className="hidden px-2 py-3 text-center sm:table-cell">{r.won}</td>

@@ -74,6 +74,8 @@ export interface TeamSetState {
   timeouts: number;
   substitutions: number;
   subPairs: SubPair[];
+  /** Jugadores que ingresaron desde la banca en el set (sustituciones y líbero), en orden. */
+  entered: number[];
   /** Líbero en cancha y el jugador al que reemplaza. */
   liberoOnCourt: { libero: number; replaced: number } | null;
   /** Índice de rally de la última entrada/salida del líbero (-1 = ninguna). */

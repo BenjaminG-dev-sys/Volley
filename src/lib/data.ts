@@ -1,6 +1,9 @@
 import "server-only";
 
 import { serverClient } from "@/lib/insforge/server";
+import { buildSetup, rowToEvent } from "@/lib/match";
+import { replay } from "@/lib/scoresheet";
+import { addAppearances, emptyAppearances } from "@/lib/stats/appearances";
 import type { Match, MatchEventRow, PlayerPublic, Team, Tournament, TournamentTeam, Venue } from "@/lib/types";
 
 async function run<T>(p: PromiseLike<{ data: unknown; error: { message: string } | null }>): Promise<T> {
@@ -81,3 +84,81 @@ export async function getMatchBundle(id: string) {
 }
 
 export type MatchBundle = NonNullable<Awaited<ReturnType<typeof getMatchBundle>>>;
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Perfil público de un equipo: nómina, partidos y los torneos en los que está inscrito. */
+export async function getTeamBundle(id: string) {
+  if (!UUID.test(id)) return null;
+  const db = (await serverClient()).database;
+  const team = await run<Team | null>(db.from("teams").select("*").eq("id", id).maybeSingle());
+  if (!team) return null;
+  const [players, entries, matches] = await Promise.all([
+    run<PlayerPublic[]>(db.from("players_public").select("*").eq("team_id", id).order("number")),
+    run<TournamentTeam[]>(db.from("tournament_teams").select("*").eq("team_id", id)),
+    run<Match[]>(db.from("matches").select(MATCH_COLS).or(`home_team_id.eq.${id},away_team_id.eq.${id}`).order("scheduled_at").limit(300)),
+  ]);
+  const tournamentIds = [...new Set(entries.map((e) => e.tournament_id))];
+  const [tournaments, tournamentEntries, tournamentMatches] = tournamentIds.length
+    ? await Promise.all([
+        run<Tournament[]>(db.from("tournaments").select("*").in("id", tournamentIds)),
+        run<TournamentTeam[]>(db.from("tournament_teams").select("*").in("tournament_id", tournamentIds)),
+        run<Match[]>(db.from("matches").select(MATCH_COLS).in("tournament_id", tournamentIds).eq("status", "finished").limit(1000)),
+      ])
+    : [[], [], []];
+  const opponentIds = [...new Set(matches.flatMap((m) => [m.home_team_id, m.away_team_id]))];
+  const teams = await run<Team[]>(db.from("teams").select("*").in("id", opponentIds.length ? opponentIds : [id]));
+  return { team, players, entries, matches, teams, tournaments, tournamentEntries, tournamentMatches };
+}
+
+export type TeamBundle = NonNullable<Awaited<ReturnType<typeof getTeamBundle>>>;
+
+/**
+ * Perfil público de un jugador (sin cédula ni fecha completa) y su participación en los
+ * últimos partidos de su equipo, reconstruida con el motor de planilla.
+ */
+export async function getPlayerProfile(id: string, maxMatches = 20) {
+  if (!UUID.test(id)) return null;
+  const db = (await serverClient()).database;
+  const player = await run<PlayerPublic | null>(db.from("players_public").select("*").eq("id", id).maybeSingle());
+  if (!player) return null;
+  const tid = player.team_id;
+  const [team, matches] = await Promise.all([
+    run<Team>(db.from("teams").select("*").eq("id", tid).single()),
+    run<Match[]>(
+      db
+        .from("matches")
+        .select(MATCH_COLS)
+        .or(`home_team_id.eq.${tid},away_team_id.eq.${tid}`)
+        .in("status", ["live", "finished"])
+        .order("scheduled_at", { ascending: false })
+        .limit(maxMatches),
+    ),
+  ]);
+  const teamIds = [...new Set(matches.flatMap((m) => [m.home_team_id, m.away_team_id]).concat(tid))];
+  const tournamentIds = [...new Set(matches.map((m) => m.tournament_id))];
+  const [teams, rosters, tournaments, events] = await Promise.all([
+    run<Team[]>(db.from("teams").select("*").in("id", teamIds)),
+    run<PlayerPublic[]>(db.from("players_public").select("*").in("team_id", teamIds)),
+    tournamentIds.length ? run<Tournament[]>(db.from("tournaments").select("*").in("id", tournamentIds)) : Promise.resolve([] as Tournament[]),
+    Promise.all(
+      matches.map((m) =>
+        run<MatchEventRow[]>(db.from("match_events").select("seq, type, payload, created_at").eq("match_id", m.id).order("seq").limit(2000)),
+      ),
+    ),
+  ]);
+
+  const total = emptyAppearances();
+  const perMatch = matches.map((m, i) => {
+    const t = tournaments.find((x) => x.id === m.tournament_id);
+    const home = teams.find((x) => x.id === m.home_team_id);
+    const away = teams.find((x) => x.id === m.away_team_id);
+    if (!t || !home || !away) return { match: m, sets: 0 };
+    const setup = buildSetup(t, home, away, rosters.filter((p) => p.team_id === home.id), rosters.filter((p) => p.team_id === away.id));
+    const state = replay(setup, events[i].map(rowToEvent));
+    const one = addAppearances(emptyAppearances(), state, m.home_team_id === tid ? "A" : "B", player.number);
+    addAppearances(total, state, m.home_team_id === tid ? "A" : "B", player.number);
+    return { match: m, sets: one.sets };
+  });
+  return { player, team, teams, appearances: total, perMatch };
+}

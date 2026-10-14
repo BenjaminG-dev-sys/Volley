@@ -4,9 +4,9 @@ import { LiveRefresher } from "@/components/live-refresher";
 import { Carousel, MatchCard } from "@/components/match-card";
 import { MatchRow } from "@/components/match-row";
 import { ResultsMarquee } from "@/components/results-marquee";
+import { TeamTile } from "@/components/team-tile";
 import { Badge, Card, CardHeader, Empty, Hero, LinkButton, LiveBadge, Section, TeamCrest } from "@/components/ui";
 import { listMatches, listTeams, listTournaments } from "@/lib/data";
-import { teamVars } from "@/lib/color";
 import { BRANCH_LABEL, BRANCH_TONE } from "@/lib/format";
 import { SPORT_LABEL, type Sport } from "@/lib/scoresheet/rules";
 import type { Match, Team, Tournament } from "@/lib/types";
@@ -131,7 +131,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
 
       {teams.length > 0 && (
         <section>
-          <SectionTitle eyebrow={`${teams.length} clubes`} title="Equipos" />
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <SectionTitle eyebrow={`${teams.length} clubes`} title="Equipos" />
+            <LinkButton variant="secondary" href={sport ? `/equipos?deporte=${sport}` : "/equipos"} className="mb-6">
+              Ver todos <ArrowRightIcon size={16} />
+            </LinkButton>
+          </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {teams.slice(0, 8).map((t) => (
               <TeamTile key={t.id} team={t} />
@@ -227,28 +232,4 @@ function TournamentTile({ t }: { t: Tournament }) {
       </div>
     </Link>
   );
-}
-
-/** Tarjeta de equipo tipo "producto": bloque del color del club con su sigla gigante. */
-function TeamTile({ team }: { team: Team }) {
-  return (
-    <div
-      className="group relative flex aspect-[4/5] flex-col justify-between overflow-hidden rounded-2xl bg-team p-4 text-team-ink"
-      style={teamVars(team.color_primary) as React.CSSProperties}
-    >
-      <TeamCrestInk team={team} />
-      <span className="img-hover pointer-events-none absolute -right-3 top-6 font-display text-[7rem] font-extrabold uppercase leading-none opacity-15 sm:text-[9rem]" aria-hidden>
-        {team.short_name.slice(0, 3)}
-      </span>
-      <div className="relative">
-        <p className="font-display text-2xl font-extrabold uppercase leading-none">{team.short_name}</p>
-        <p className="mt-1 truncate text-sm opacity-80">{team.name}</p>
-        {team.city && <p className="eyebrow mt-2 opacity-70">{team.city}</p>}
-      </div>
-    </div>
-  );
-}
-
-function TeamCrestInk({ team }: { team: Team }) {
-  return <TeamCrest name={team.name} color={team.color_secondary || "#ffffff"} logo={team.logo_url} size="md" className="ring-2 ring-white/40" />;
 }

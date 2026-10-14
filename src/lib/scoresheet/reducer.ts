@@ -181,6 +181,7 @@ export function applyEvent(
         ts.subPairs.push({ starter: out, sub: inn, returned: false });
       }
       ts.positions[idx] = inn;
+      ts.entered.push(inn);
       ts.substitutions += 1;
       log(`Sustitución ${name(team)}: sale ${out}, entra ${inn} (${ts.substitutions}/${rules.maxSubstitutions})`);
       return state;
@@ -201,6 +202,7 @@ export function applyEvent(
       if (!isBackRow(idx)) fail("El líbero solo puede reemplazar a un zaguero (posiciones I, V o VI).");
       if (idx === 0 && state.serving === team) fail("El líbero no puede sacar.");
       ts.positions[idx] = libero;
+      ts.entered.push(libero);
       ts.liberoOnCourt = { libero, replaced };
       ts.lastLiberoRally = s.rallies.length;
       log(`Líbero ${name(team)}: entra ${libero} por ${replaced}`);
@@ -268,6 +270,7 @@ function cloneTeam(t: TeamSetState): TeamSetState {
     starters: [...t.starters],
     liberos: [...t.liberos],
     subPairs: t.subPairs.map((p) => ({ ...p })),
+    entered: [...t.entered],
     liberoOnCourt: t.liberoOnCourt && { ...t.liberoOnCourt },
   };
 }
@@ -310,6 +313,7 @@ function startSet(state: MatchState, seq: number, setup: MatchSetup) {
       timeouts: 0,
       substitutions: 0,
       subPairs: [],
+      entered: [],
       liberoOnCourt: null,
       lastLiberoRally: -1,
     };
