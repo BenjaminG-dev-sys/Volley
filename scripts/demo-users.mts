@@ -11,6 +11,8 @@ const USERS = [
   { email: "admin@demo.ec", name: "Admin Demo", role: "admin" },
   { email: "organizador@demo.ec", name: "Organizadora Demo", role: "organizer" },
   { email: "planillero@demo.ec", name: "Planillero Demo", role: "scorer" },
+  { email: "arbitro@demo.ec", name: "Árbitro Demo", role: "referee" },
+  { email: "publico@demo.ec", name: "Público Demo", role: "viewer" },
 ] as const;
 
 for (const u of USERS) {

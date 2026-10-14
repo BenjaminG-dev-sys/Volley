@@ -10,6 +10,8 @@ y **planilla electrónica** para la mesa de control, con marcador público en ti
 | `admin@demo.ec` | `Voley2026!` | Administrador | Todo, incluido asignar roles |
 | `organizador@demo.ec` | `Voley2026!` | Organizador | Torneos, equipos, nóminas, calendario, asignaciones |
 | `planillero@demo.ec` | `Voley2026!` | Planillero | Llevar la planilla de los partidos asignados |
+| `arbitro@demo.ec` | `Voley2026!` | Árbitro | Ver el sitio con sesión iniciada (rol reservado; aún sin permisos propios) |
+| `publico@demo.ec` | `Voley2026!` | Público (con cuenta) | Lo mismo que sin cuenta |
 | _(sin cuenta)_ | | Público | Portada, torneos, posiciones, marcador en vivo, planilla final |
 
 ## Guion de demostración (≈5 min)
@@ -107,7 +109,7 @@ npm run dev                  # http://localhost:3000
 |---|---|
 | `npm test` | Pruebas del motor de reglas, calendario, posiciones y cédula (Vitest) |
 | `npm run lint` / `npm run build` | Lint y compilación de producción |
-| `npm run seed` | Reemplaza los datos demo: torneo de vóley (8 clubes, 96 jugadoras) e interparroquial de ecuavóley (6 parroquias), con partidos simulados con el motor |
+| `npm run seed` | Reemplaza los datos demo: torneo de vóley (8 clubes de parroquias rurales de Quito, 96 jugadoras) e interparroquial de ecuavóley (6 parroquias), con partidos simulados con el motor |
 | `npm run seed:users` | Crea/actualiza los usuarios demo y asigna al planillero los partidos pendientes |
 | `npm run test:e2e` | Playwright: flujo de mesa + marcador en vivo y panel de admin (`BASE_URL` para apuntar a la nube). Modifica datos: luego `npm run seed && npm run seed:users` |
 

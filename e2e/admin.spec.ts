@@ -9,7 +9,7 @@ test("el admin navega el panel, torneos, nóminas y usuarios", async ({ page }) 
 
   const nav = page.getByRole("navigation", { name: "Panel" });
   await nav.getByRole("link", { name: "Torneos" }).click();
-  await page.getByRole("link", { name: /Campeonato Nacional Sub-19/ }).click();
+  await page.getByRole("link", { name: /Campeonato Metropolitano Sub-19/ }).click();
   const tabs = page.getByRole("navigation", { name: "Secciones del torneo" });
   await tabs.getByRole("link", { name: "Equipos", exact: true }).click();
   await expect(page.getByText("Equipos inscritos")).toBeVisible();
@@ -17,7 +17,7 @@ test("el admin navega el panel, torneos, nóminas y usuarios", async ({ page }) 
   await expect(page.getByText(/Planillero, árbitros/)).toBeVisible();
 
   await nav.getByRole("link", { name: "Equipos y nóminas" }).click();
-  await page.getByRole("link", { name: /Cóndores/ }).click();
+  await page.getByRole("link", { name: /Conocoto/ }).click();
   await expect(page.getByText(/12\/14 jugadores/)).toBeVisible();
   // Cédula inválida: la valida el servidor
   const add = page.locator("form", { has: page.getByRole("button", { name: "Registrar" }) });
@@ -31,8 +31,8 @@ test("el admin navega el panel, torneos, nóminas y usuarios", async ({ page }) 
 
   // Buscador global
   await page.keyboard.press("Control+k");
-  await page.getByPlaceholder(/Escribe al menos 2 letras/).fill("Cóndores");
-  await expect(page.getByRole("dialog", { name: "Buscar" }).getByText(/Cóndores/).first()).toBeVisible();
+  await page.getByPlaceholder(/Escribe al menos 2 letras/).fill("Conocoto");
+  await expect(page.getByRole("dialog", { name: "Buscar" }).getByText(/Conocoto/).first()).toBeVisible();
   await page.keyboard.press("Escape");
 
   await nav.getByRole("link", { name: "Usuarios y roles" }).click();

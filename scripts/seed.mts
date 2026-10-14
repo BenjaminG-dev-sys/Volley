@@ -28,15 +28,16 @@ const FIRST = ["María", "Daniela", "Valentina", "Camila", "Sofía", "Gabriela",
 const LAST = ["Andrade", "Zambrano", "Cedeño", "Guerrero", "Mendoza", "Vera", "Paredes", "Chávez", "Morales", "Salazar",
   "Quiñónez", "Bravo", "Villacís", "Ortiz", "Jaramillo", "Loor", "Castro", "Cevallos", "Benítez", "Montalvo"];
 
+// Clubes de parroquias rurales de Quito (distintas de las del interparroquial de ecuavóley).
 const CLUBS = [
-  { name: "Club Deportivo Cóndores de Quito", short: "Cóndores", city: "Quito", province: "Pichincha", c1: "#1d4ed8", c2: "#ffffff", prov: 17, r: 0.58 },
-  { name: "Club Volcán Cotopaxi", short: "Volcán", city: "Latacunga", province: "Cotopaxi", c1: "#b91c1c", c2: "#fde68a", prov: 5, r: 0.5 },
-  { name: "Club Guerreras del Guayas", short: "Guerreras", city: "Guayaquil", province: "Guayas", c1: "#0e7490", c2: "#ffffff", prov: 9, r: 0.56 },
-  { name: "Club Marea Manabita", short: "Marea", city: "Manta", province: "Manabí", c1: "#0369a1", c2: "#fbbf24", prov: 13, r: 0.47 },
-  { name: "Club Tomebamba Vóley", short: "Tomebamba", city: "Cuenca", province: "Azuay", c1: "#7c3aed", c2: "#ffffff", prov: 1, r: 0.54 },
-  { name: "Club Halcones de Loja", short: "Halcones", city: "Loja", province: "Loja", c1: "#15803d", c2: "#ffffff", prov: 11, r: 0.45 },
-  { name: "Club Amazonas Vóley", short: "Amazonas", city: "Tena", province: "Napo", c1: "#166534", c2: "#facc15", prov: 15, r: 0.43 },
-  { name: "Club Pacífico Esmeraldas", short: "Pacífico", city: "Esmeraldas", province: "Esmeraldas", c1: "#ea580c", c2: "#1f2937", prov: 8, r: 0.49 },
+  { name: "Club Deportivo Conocoto", short: "Conocoto", c1: "#1d4ed8", c2: "#ffffff", r: 0.58 },
+  { name: "Club Deportivo Pomasqui", short: "Pomasqui", c1: "#b91c1c", c2: "#fde68a", r: 0.5 },
+  { name: "Club Deportivo Amaguaña", short: "Amaguaña", c1: "#0e7490", c2: "#ffffff", r: 0.56 },
+  { name: "Club Deportivo Yaruquí", short: "Yaruquí", c1: "#0369a1", c2: "#fbbf24", r: 0.47 },
+  { name: "Club Deportivo Alangasí", short: "Alangasí", c1: "#7c3aed", c2: "#ffffff", r: 0.54 },
+  { name: "Club Deportivo Puembo", short: "Puembo", c1: "#15803d", c2: "#ffffff", r: 0.45 },
+  { name: "Club Deportivo Guayllabamba", short: "Guayllabamba", c1: "#166534", c2: "#facc15", r: 0.43 },
+  { name: "Club Deportivo Pifo", short: "Pifo", c1: "#ea580c", c2: "#1f2937", r: 0.49 },
 ];
 
 const POSITIONS = ["armador", "opuesto", "central", "central", "punta", "punta", "armador", "opuesto", "central", "punta"] as const;
@@ -64,13 +65,11 @@ async function main() {
     ]).select("id, short_name"),
     "organizations",
   );
-  const fed = orgs[0];
-
   const venues = await q<{ id: string; city: string }[]>(
     db.from("venues").insert([
-      { name: "Coliseo Norte", city: "Quito", province: "Pichincha" },
-      { name: "Coliseo del Puerto", city: "Guayaquil", province: "Guayas" },
-      { name: "Coliseo Municipal Río Tomebamba", city: "Cuenca", province: "Azuay" },
+      { name: "Coliseo Parroquial de Tumbaco", city: "Quito", province: "Pichincha" },
+      { name: "Coliseo Parroquial de Conocoto", city: "Quito", province: "Pichincha" },
+      { name: "Coliseo Parroquial de Pomasqui", city: "Quito", province: "Pichincha" },
     ]).select("id, city"),
     "venues",
   );
@@ -78,7 +77,7 @@ async function main() {
   console.log("Árbitros…");
   await q(
     db.from("referees").insert(
-      REFEREES.map((name, i) => ({ name, city: ["Quito", "Guayaquil", "Cuenca"][i % 3], level: i < 2 ? "nacional" : "provincial", active: true })),
+      REFEREES.map((name, i) => ({ name, city: "Quito", level: i < 2 ? "nacional" : "provincial", active: true })),
     ),
     "referees",
   );
@@ -86,8 +85,8 @@ async function main() {
   console.log("Torneo…");
   const [tournament] = await q<Pick<Tournament, "id" | "best_of" | "sport" | "rules">[]>(
     db.from("tournaments").insert([{
-      organization_id: fed.id,
-      name: "Campeonato Nacional Sub-19 Femenino 2026",
+      organization_id: orgs[1].id, // APV Pichincha
+      name: "Campeonato Metropolitano Sub-19 Femenino 2026",
       season: 2026,
       category: "Sub-19",
       branch: "femenino",
@@ -103,16 +102,15 @@ async function main() {
   console.log("Equipos y jugadoras…");
   const teams = await q<Team[]>(
     db.from("teams").insert(CLUBS.map((c) => ({
-      organization_id: orgs[1 + ["Pichincha", "Guayas", "Azuay"].indexOf(c.province)].id, // -1 → federación
-      name: c.name, short_name: c.short, city: c.city, province: c.province, color_primary: c.c1, color_secondary: c.c2,
+      organization_id: orgs[1].id, // APV Pichincha
+      name: c.name, short_name: c.short, city: "Quito", province: "Pichincha", color_primary: c.c1, color_secondary: c.c2,
       sport: "voley",
     }))).select("*"),
     "teams",
   );
 
   let serial = 1000;
-  const playerRows = teams.flatMap((team, ti) => {
-    const club = CLUBS[ti];
+  const playerRows = teams.flatMap((team) => {
     return Array.from({ length: 12 }, (_, i) => {
       const libero = i >= 10;
       const birthYear = 2008 + Math.floor(rand() * 3);
@@ -123,7 +121,7 @@ async function main() {
         team_id: team.id,
         first_name: pick(FIRST),
         last_name: `${pick(LAST)} ${pick(LAST)}`,
-        cedula: makeCedula(club.prov, serial),
+        cedula: makeCedula(17, serial),
         birth_date: `${birthYear}-${month}-${day}`,
         number: libero ? (i === 10 ? 1 : 12) : [2, 3, 4, 5, 6, 7, 8, 9, 10, 11][i],
         position: libero ? "libero" : POSITIONS[i],
