@@ -1,7 +1,7 @@
 // Datos de demostración (todo ecuavóley). Uso: npm run seed  (lee .env.local; requiere INSFORGE_API_KEY)
 // Borra y vuelve a crear organizaciones, sedes, árbitros, torneo, equipos, jugadores y partidos.
 // Los partidos terminados se generan reproduciendo eventos con el motor de planilla.
-// Las fechas son relativas al día en que se ejecuta: la jornada 3 siempre es "hoy".
+// 16 equipos en 4 grupos de 4. Las fechas son relativas al día en que se ejecuta: la jornada 3 siempre es "hoy".
 
 import { createAdminClient } from "@insforge/sdk";
 import { buildSetup, eventToRow, matchPatch } from "../src/lib/match";
@@ -28,16 +28,25 @@ const MEN = ["Carlos", "Luis", "Jorge", "Diego", "Andrés", "Fernando", "Pablo",
 const LAST = ["Andrade", "Zambrano", "Cedeño", "Guerrero", "Mendoza", "Vera", "Paredes", "Chávez", "Morales", "Salazar",
   "Quiñónez", "Bravo", "Villacís", "Ortiz", "Jaramillo", "Loor", "Castro", "Cevallos", "Benítez", "Montalvo"];
 
-// Ligas parroquiales del Distrito Metropolitano de Quito; `r` es el nivel relativo para la simulación.
+// 16 parroquias rurales del Distrito Metropolitano de Quito. `zone` elige la asociación
+// (1 = norte, 2 = valles) y `r` es el nivel relativo para la simulación.
 const PARISHES = [
-  { name: "Liga Parroquial Zámbiza", short: "Zámbiza", c1: "#0f766e", r: 0.56 },
-  { name: "Liga Parroquial Calderón", short: "Calderón", c1: "#b91c1c", r: 0.52 },
-  { name: "Liga Parroquial Cumbayá", short: "Cumbayá", c1: "#1d4ed8", r: 0.5 },
-  { name: "Liga Parroquial Llano Chico", short: "Llano Chico", c1: "#7c3aed", r: 0.46 },
-  { name: "Liga Parroquial Nayón", short: "Nayón", c1: "#ca8a04", r: 0.48 },
-  { name: "Liga Parroquial Tumbaco", short: "Tumbaco", c1: "#15803d", r: 0.53 },
-  { name: "Liga Parroquial Pomasqui", short: "Pomasqui", c1: "#ea580c", r: 0.51 },
-  { name: "Liga Parroquial Conocoto", short: "Conocoto", c1: "#0369a1", r: 0.49 },
+  { name: "Liga Parroquial Zámbiza", short: "Zámbiza", c1: "#0f766e", zone: 1, r: 0.56 },
+  { name: "Liga Parroquial Calderón", short: "Calderón", c1: "#b91c1c", zone: 1, r: 0.52 },
+  { name: "Liga Parroquial Cumbayá", short: "Cumbayá", c1: "#1d4ed8", zone: 2, r: 0.5 },
+  { name: "Liga Parroquial Llano Chico", short: "Llano Chico", c1: "#7c3aed", zone: 1, r: 0.46 },
+  { name: "Liga Parroquial Nayón", short: "Nayón", c1: "#ca8a04", zone: 1, r: 0.48 },
+  { name: "Liga Parroquial Tumbaco", short: "Tumbaco", c1: "#15803d", zone: 2, r: 0.53 },
+  { name: "Liga Parroquial Pomasqui", short: "Pomasqui", c1: "#ea580c", zone: 1, r: 0.51 },
+  { name: "Liga Parroquial Conocoto", short: "Conocoto", c1: "#0369a1", zone: 2, r: 0.49 },
+  { name: "Liga Parroquial Amaguaña", short: "Amaguaña", c1: "#be185d", zone: 2, r: 0.55 },
+  { name: "Liga Parroquial Pifo", short: "Pifo", c1: "#4d7c0f", zone: 2, r: 0.47 },
+  { name: "Liga Parroquial Puembo", short: "Puembo", c1: "#9333ea", zone: 2, r: 0.5 },
+  { name: "Liga Parroquial Yaruquí", short: "Yaruquí", c1: "#c2410c", zone: 2, r: 0.45 },
+  { name: "Liga Parroquial Alangasí", short: "Alangasí", c1: "#0891b2", zone: 2, r: 0.52 },
+  { name: "Liga Parroquial Guayllabamba", short: "Guayllabamba", c1: "#a16207", zone: 1, r: 0.44 },
+  { name: "Liga Parroquial Píntag", short: "Píntag", c1: "#1e3a8a", zone: 2, r: 0.54 },
+  { name: "Liga Parroquial El Quinche", short: "El Quinche", c1: "#991b1b", zone: 2, r: 0.48 },
 ];
 // 3 titulares (servidor, colocador, volador) + 3 suplentes; el tope de ecuavóley es 7.
 const ECUA_ROLES = ["servidor", "colocador", "volador", "servidor", "colocador", "volador"] as const;
@@ -56,7 +65,8 @@ async function wipe() {
 function roundSlot(round: number, slot: number) {
   const todayEct = new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 10);
   const day = new Date(Date.parse(`${todayEct}T12:00:00Z`) - (3 - round) * 7 * 86400_000).toISOString().slice(0, 10);
-  return new Date(`${day}T${TIMES[slot % TIMES.length]}:00-05:00`).toISOString();
+  // 8 partidos por jornada: dos a la vez (en sedes distintas) en cada horario.
+  return new Date(`${day}T${TIMES[Math.floor(slot / 2) % TIMES.length]}:00-05:00`).toISOString();
 }
 
 async function main() {
@@ -107,8 +117,8 @@ async function main() {
 
   console.log("Equipos y jugadores…");
   const teams = await q<Team[]>(
-    db.from("teams").insert(PARISHES.map((p, i) => ({
-      organization_id: orgs[1 + (i % 2)].id,
+    db.from("teams").insert(PARISHES.map((p) => ({
+      organization_id: orgs[p.zone].id,
       name: p.name, short_name: p.short, city: "Quito", province: "Pichincha",
       color_primary: p.c1, color_secondary: "#ffffff", sport: "ecuavoley",
     }))).select("*"),
@@ -137,7 +147,7 @@ async function main() {
   );
 
   console.log("Grupos y calendario…");
-  const groups = snakeGroups(teams.map((t) => t.id), 2);
+  const groups = snakeGroups(teams.map((t) => t.id), 4);
   await q(db.from("tournament_teams").insert(
     groups.flatMap((g, gi) => g.map((teamId, si) => ({ tournament_id: tournament.id, team_id: teamId, group_label: groupLabel(gi), seed: si + 1 }))),
   ), "tournament_teams");
@@ -155,7 +165,7 @@ async function main() {
         round: f.round,
         home_team_id: f.home,
         away_team_id: f.away,
-        venue_id: venues[(f.round - 1) % venues.length].id,
+        venue_id: venues[slot % venues.length].id,
         scheduled_at: roundSlot(f.round, slot),
         referee_1: REFEREES[i % REFEREES.length],
         referee_2: REFEREES[(i + 3) % REFEREES.length],
@@ -173,11 +183,11 @@ async function main() {
     return `${c.first_name} ${c.last_name}`;
   };
 
-  // Jornadas 1 y 2 terminadas. Jornada 3 (hoy): el primer partido en vivo, el segundo queda como
-  // "partido demo" para llevarlo desde el sorteo, y el resto programados.
+  // Jornadas 1 y 2 terminadas. Jornada 3 (hoy): el primer partido de las 10:00 en vivo, el primero de
+  // las 11:30 queda como "partido demo" para llevarlo desde el sorteo, y el resto programados.
   const today = matches.filter((m) => m.round === 3);
   const live = today[0];
-  const demo = today[1];
+  const demo = today.find((m) => m.scheduled_at > live.scheduled_at);
   for (const [i, m] of matches.entries()) {
     const isLive = m.id === live?.id;
     if (m.round > 2 && !isLive) continue;
