@@ -1,6 +1,7 @@
-// Datos de demostración. Uso: npm run seed  (lee .env.local; requiere INSFORGE_API_KEY)
-// Borra y vuelve a crear organizaciones, sedes, torneo, equipos, jugadores y partidos.
+// Datos de demostración (todo ecuavóley). Uso: npm run seed  (lee .env.local; requiere INSFORGE_API_KEY)
+// Borra y vuelve a crear organizaciones, sedes, árbitros, torneo, equipos, jugadores y partidos.
 // Los partidos terminados se generan reproduciendo eventos con el motor de planilla.
+// Las fechas son relativas al día en que se ejecuta: la jornada 3 siempre es "hoy".
 
 import { createAdminClient } from "@insforge/sdk";
 import { buildSetup, eventToRow, matchPatch } from "../src/lib/match";
@@ -23,24 +24,25 @@ async function q<T>(p: PromiseLike<{ data: T | null; error: unknown }>, what: st
 const rand = rng(2026);
 const pick = <T,>(xs: readonly T[]) => xs[Math.floor(rand() * xs.length)];
 
-const FIRST = ["María", "Daniela", "Valentina", "Camila", "Sofía", "Gabriela", "Andrea", "Paula", "Isabella", "Mishel",
-  "Doménica", "Emilia", "Fernanda", "Ariana", "Nicole", "Karla", "Josselyn", "Thalía", "Dayana", "Allison"];
+const MEN = ["Carlos", "Luis", "Jorge", "Diego", "Andrés", "Fernando", "Pablo", "Santiago", "Javier", "Marco", "Byron", "Edison", "Wilson", "Patricio"];
 const LAST = ["Andrade", "Zambrano", "Cedeño", "Guerrero", "Mendoza", "Vera", "Paredes", "Chávez", "Morales", "Salazar",
   "Quiñónez", "Bravo", "Villacís", "Ortiz", "Jaramillo", "Loor", "Castro", "Cevallos", "Benítez", "Montalvo"];
 
-const CLUBS = [
-  { name: "Club Deportivo Cóndores de Quito", short: "Cóndores", city: "Quito", province: "Pichincha", c1: "#1d4ed8", c2: "#ffffff", prov: 17, r: 0.58 },
-  { name: "Club Volcán Cotopaxi", short: "Volcán", city: "Latacunga", province: "Cotopaxi", c1: "#b91c1c", c2: "#fde68a", prov: 5, r: 0.5 },
-  { name: "Club Guerreras del Guayas", short: "Guerreras", city: "Guayaquil", province: "Guayas", c1: "#0e7490", c2: "#ffffff", prov: 9, r: 0.56 },
-  { name: "Club Marea Manabita", short: "Marea", city: "Manta", province: "Manabí", c1: "#0369a1", c2: "#fbbf24", prov: 13, r: 0.47 },
-  { name: "Club Tomebamba Vóley", short: "Tomebamba", city: "Cuenca", province: "Azuay", c1: "#7c3aed", c2: "#ffffff", prov: 1, r: 0.54 },
-  { name: "Club Halcones de Loja", short: "Halcones", city: "Loja", province: "Loja", c1: "#15803d", c2: "#ffffff", prov: 11, r: 0.45 },
-  { name: "Club Amazonas Vóley", short: "Amazonas", city: "Tena", province: "Napo", c1: "#166534", c2: "#facc15", prov: 15, r: 0.43 },
-  { name: "Club Pacífico Esmeraldas", short: "Pacífico", city: "Esmeraldas", province: "Esmeraldas", c1: "#ea580c", c2: "#1f2937", prov: 8, r: 0.49 },
+// Ligas parroquiales del Distrito Metropolitano de Quito; `r` es el nivel relativo para la simulación.
+const PARISHES = [
+  { name: "Liga Parroquial Zámbiza", short: "Zámbiza", c1: "#0f766e", r: 0.56 },
+  { name: "Liga Parroquial Calderón", short: "Calderón", c1: "#b91c1c", r: 0.52 },
+  { name: "Liga Parroquial Cumbayá", short: "Cumbayá", c1: "#1d4ed8", r: 0.5 },
+  { name: "Liga Parroquial Llano Chico", short: "Llano Chico", c1: "#7c3aed", r: 0.46 },
+  { name: "Liga Parroquial Nayón", short: "Nayón", c1: "#ca8a04", r: 0.48 },
+  { name: "Liga Parroquial Tumbaco", short: "Tumbaco", c1: "#15803d", r: 0.53 },
+  { name: "Liga Parroquial Pomasqui", short: "Pomasqui", c1: "#ea580c", r: 0.51 },
+  { name: "Liga Parroquial Conocoto", short: "Conocoto", c1: "#0369a1", r: 0.49 },
 ];
-
-const POSITIONS = ["armador", "opuesto", "central", "central", "punta", "punta", "armador", "opuesto", "central", "punta"] as const;
+// 3 titulares (servidor, colocador, volador) + 3 suplentes; el tope de ecuavóley es 7.
+const ECUA_ROLES = ["servidor", "colocador", "volador", "servidor", "colocador", "volador"] as const;
 const REFEREES = ["Luis Paredes", "Carmen Vélez", "Jorge Almeida", "Patricia Ruiz", "Diego Cárdenas", "Silvia Narváez"];
+const TIMES = ["10:00", "11:30", "13:00", "14:30"]; // hora de Ecuador
 
 async function wipe() {
   // El orden respeta las claves foráneas (match_events cae en cascada con matches).
@@ -50,89 +52,89 @@ async function wipe() {
   }
 }
 
+/** Fecha ISO para la jornada `round` (1–3): la 3 es hoy, cada jornada anterior una semana antes. */
+function roundSlot(round: number, slot: number) {
+  const todayEct = new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 10);
+  const day = new Date(Date.parse(`${todayEct}T12:00:00Z`) - (3 - round) * 7 * 86400_000).toISOString().slice(0, 10);
+  return new Date(`${day}T${TIMES[slot % TIMES.length]}:00-05:00`).toISOString();
+}
+
 async function main() {
   console.log("Limpiando datos anteriores…");
   await wipe();
 
-  console.log("Organizaciones y sedes…");
+  console.log("Organizaciones, sedes y árbitros…");
   const orgs = await q<{ id: string; short_name: string }[]>(
     db.from("organizations").insert([
-      { name: "Federación Nacional de Voleibol (demo)", short_name: "FNV", kind: "federation", province: null },
-      { name: "Asociación Provincial de Voleibol de Pichincha", short_name: "APV Pichincha", kind: "association", province: "Pichincha" },
-      { name: "Asociación Provincial de Voleibol del Guayas", short_name: "APV Guayas", kind: "association", province: "Guayas" },
-      { name: "Asociación Provincial de Voleibol del Azuay", short_name: "APV Azuay", kind: "association", province: "Azuay" },
+      { name: "Liga Cantonal de Ecuavóley de Quito (demo)", short_name: "LCEQ", kind: "league", province: "Pichincha" },
+      { name: "Asociación de Ligas Parroquiales del Norte", short_name: "ALP Norte", kind: "association", province: "Pichincha" },
+      { name: "Asociación de Ligas Parroquiales de los Valles", short_name: "ALP Valles", kind: "association", province: "Pichincha" },
     ]).select("id, short_name"),
     "organizations",
   );
-  const fed = orgs[0];
-
-  const venues = await q<{ id: string; city: string }[]>(
+  const venues = await q<{ id: string }[]>(
     db.from("venues").insert([
-      { name: "Coliseo Norte", city: "Quito", province: "Pichincha" },
-      { name: "Coliseo del Puerto", city: "Guayaquil", province: "Guayas" },
-      { name: "Coliseo Municipal Río Tomebamba", city: "Cuenca", province: "Azuay" },
-    ]).select("id, city"),
+      { name: "Coliseo de Calderón", city: "Quito", province: "Pichincha" },
+      { name: "Cancha cubierta de Zámbiza", city: "Quito", province: "Pichincha" },
+      { name: "Cancha del Parque de Cumbayá", city: "Quito", province: "Pichincha" },
+    ]).select("id"),
     "venues",
   );
-
-  console.log("Árbitros…");
   await q(
     db.from("referees").insert(
-      REFEREES.map((name, i) => ({ name, city: ["Quito", "Guayaquil", "Cuenca"][i % 3], level: i < 2 ? "nacional" : "provincial", active: true })),
+      REFEREES.map((name, i) => ({ name, city: "Quito", level: i < 2 ? "provincial" : "parroquial", active: true })),
     ),
     "referees",
   );
 
-  console.log("Torneo…");
+  console.log("Torneo interparroquial de ecuavóley…");
   const [tournament] = await q<Pick<Tournament, "id" | "best_of" | "sport" | "rules">[]>(
     db.from("tournaments").insert([{
-      organization_id: fed.id,
-      name: "Campeonato Nacional Sub-19 Femenino 2026",
+      organization_id: orgs[0].id,
+      name: "Interparroquial de Ecuavóley 2026",
       season: 2026,
-      category: "Sub-19",
-      branch: "femenino",
+      category: "Mayores",
+      branch: "masculino",
       city: "Quito",
       format: "groups_knockout",
-      best_of: 5,
-      sport: "voley",
+      best_of: 3,
+      sport: "ecuavoley",
+      rules: null, // reglamento ECUAVOLEY: sets a 15 con cambio de saque
       status: "active",
     }]).select("id, best_of, sport, rules"),
     "tournament",
   );
 
-  console.log("Equipos y jugadoras…");
+  console.log("Equipos y jugadores…");
   const teams = await q<Team[]>(
-    db.from("teams").insert(CLUBS.map((c) => ({
-      organization_id: orgs[1 + ["Pichincha", "Guayas", "Azuay"].indexOf(c.province)].id, // -1 → federación
-      name: c.name, short_name: c.short, city: c.city, province: c.province, color_primary: c.c1, color_secondary: c.c2,
-      sport: "voley",
+    db.from("teams").insert(PARISHES.map((p, i) => ({
+      organization_id: orgs[1 + (i % 2)].id,
+      name: p.name, short_name: p.short, city: "Quito", province: "Pichincha",
+      color_primary: p.c1, color_secondary: "#ffffff", sport: "ecuavoley",
     }))).select("*"),
     "teams",
   );
 
-  let serial = 1000;
-  const playerRows = teams.flatMap((team, ti) => {
-    const club = CLUBS[ti];
-    return Array.from({ length: 12 }, (_, i) => {
-      const libero = i >= 10;
-      const birthYear = 2008 + Math.floor(rand() * 3);
+  let serial = 900000;
+  const players = await q<PlayerPublic[]>(
+    db.from("players").insert(teams.flatMap((team) => ECUA_ROLES.map((position, i) => {
+      serial += 1 + Math.floor(rand() * 5000);
       const month = String(1 + Math.floor(rand() * 12)).padStart(2, "0");
       const day = String(1 + Math.floor(rand() * 28)).padStart(2, "0");
-      serial += 1 + Math.floor(rand() * 5000);
       return {
         team_id: team.id,
-        first_name: pick(FIRST),
+        first_name: pick(MEN),
         last_name: `${pick(LAST)} ${pick(LAST)}`,
-        cedula: makeCedula(club.prov, serial),
-        birth_date: `${birthYear}-${month}-${day}`,
-        number: libero ? (i === 10 ? 1 : 12) : [2, 3, 4, 5, 6, 7, 8, 9, 10, 11][i],
-        position: libero ? "libero" : POSITIONS[i],
-        is_libero: libero,
+        cedula: makeCedula(17, serial),
+        birth_date: `${1985 + Math.floor(rand() * 15)}-${month}-${day}`,
+        number: i + 1,
+        position,
+        is_libero: false,
         is_captain: i === 0,
       };
-    });
-  });
-  const players = await q<PlayerPublic[]>(db.from("players").insert(playerRows).select("*"), "players");
+    }))).select("*"),
+    "players",
+  );
 
   console.log("Grupos y calendario…");
   const groups = snakeGroups(teams.map((t) => t.id), 2);
@@ -140,161 +142,60 @@ async function main() {
     groups.flatMap((g, gi) => g.map((teamId, si) => ({ tournament_id: tournament.id, team_id: teamId, group_label: groupLabel(gi), seed: si + 1 }))),
   ), "tournament_teams");
 
-  // Jornadas en sábados consecutivos: 26 sep, 3 oct y 10 oct de 2026 (hora de Ecuador, UTC-5).
-  const day0 = Date.UTC(2026, 8, 26, 14, 0); // 26 sep 09:00 ECT
-  const fixtures = groups.flatMap((g, gi) =>
-    roundRobin(g).map((f) => ({ ...f, group: groupLabel(gi) })),
-  );
+  const fixtures = groups.flatMap((g, gi) => roundRobin(g).map((f) => ({ ...f, group: groupLabel(gi) })));
   const slotsUsed = new Map<number, number>();
-  const matchRows = fixtures.map((f, i) => {
-    const slot = slotsUsed.get(f.round) ?? 0;
-    slotsUsed.set(f.round, slot + 1);
-    return {
-      tournament_id: tournament.id,
-      stage: "group",
-      group_label: f.group,
-      round: f.round,
-      home_team_id: f.home,
-      away_team_id: f.away,
-      venue_id: venues[(f.round - 1) % venues.length].id,
-      // 4 partidos por jornada: 09:00, 11:00, 13:00 y 15:00
-      scheduled_at: new Date(day0 + (f.round - 1) * 7 * 86400_000 + slot * 2 * 3600_000).toISOString(),
-      referee_1: REFEREES[i % REFEREES.length],
-      referee_2: REFEREES[(i + 3) % REFEREES.length],
-    };
-  });
-  const matches = await q<{ id: string; home_team_id: string; away_team_id: string; round: number; group_label: string }[]>(
-    db.from("matches").insert(matchRows).select("id, home_team_id, away_team_id, round, group_label"),
+  const inserted = await q<{ id: string; home_team_id: string; away_team_id: string; round: number; scheduled_at: string }[]>(
+    db.from("matches").insert(fixtures.map((f, i) => {
+      const slot = slotsUsed.get(f.round) ?? 0;
+      slotsUsed.set(f.round, slot + 1);
+      return {
+        tournament_id: tournament.id,
+        stage: "group",
+        group_label: f.group,
+        round: f.round,
+        home_team_id: f.home,
+        away_team_id: f.away,
+        venue_id: venues[(f.round - 1) % venues.length].id,
+        scheduled_at: roundSlot(f.round, slot),
+        referee_1: REFEREES[i % REFEREES.length],
+        referee_2: REFEREES[(i + 3) % REFEREES.length],
+      };
+    })).select("id, home_team_id, away_team_id, round, scheduled_at"),
     "matches",
   );
+  const matches = inserted.sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at));
 
   const byTeam = (id: string) => players.filter((p) => p.team_id === id);
   const team = (id: string) => teams.find((t) => t.id === id)!;
-  const rating = (id: string) => CLUBS[teams.findIndex((t) => t.id === id)].r;
+  const rating = (id: string) => PARISHES[teams.findIndex((t) => t.id === id)].r;
+  const captain = (id: string) => {
+    const c = byTeam(id).find((p) => p.is_captain)!;
+    return `${c.first_name} ${c.last_name}`;
+  };
 
-  let liveDone = false;
+  // Jornadas 1 y 2 terminadas. Jornada 3 (hoy): el primer partido en vivo, el segundo queda como
+  // "partido demo" para llevarlo desde el sorteo, y el resto programados.
+  const today = matches.filter((m) => m.round === 3);
+  const live = today[0];
+  const demo = today[1];
   for (const [i, m] of matches.entries()) {
-    // Jornadas 1 y 2 terminadas; en la jornada 3 un partido en vivo y el resto programados.
-    const finished = m.round <= 2;
-    const live = !finished && !liveDone && m.group_label === "A";
-    if (!finished && !live) continue;
-    if (live) liveDone = true;
-
+    const isLive = m.id === live?.id;
+    if (m.round > 2 && !isLive) continue;
     const setup = buildSetup(tournament, team(m.home_team_id), team(m.away_team_id), byTeam(m.home_team_id), byTeam(m.away_team_id));
-    const pA = 0.5 + (rating(m.home_team_id) - rating(m.away_team_id)) * 0.6;
-    const captain = (id: string) => {
-      const c = byTeam(id).find((p) => p.is_captain)!;
-      return `${c.first_name} ${c.last_name}`;
-    };
     const { events, state } = simulateMatch(setup, {
-      seed: 100 + i,
-      pA,
-      stopAt: live ? { set: 3, points: 27 } : undefined,
+      seed: 500 + i,
+      pA: 0.5 + (rating(m.home_team_id) - rating(m.away_team_id)) * 0.6,
+      stopAt: isLive ? { set: 2, points: 11 } : undefined,
       signatures: { captainA: captain(m.home_team_id), captainB: captain(m.away_team_id), referee: REFEREES[i % REFEREES.length] },
     });
     const rows = events.map((e, k) => eventToRow(m.id, k + 1, e));
     for (let k = 0; k < rows.length; k += 500) await q(db.from("match_events").insert(rows.slice(k, k + 500)), "match_events");
     await q(db.from("matches").update(matchPatch(state, m.home_team_id, m.away_team_id)).eq("id", m.id), "match patch");
-    console.log(`  ${team(m.home_team_id).short_name} vs ${team(m.away_team_id).short_name}: ${live ? "EN VIVO" : `${state.setsWon.A}-${state.setsWon.B}`} (${rows.length} eventos)`);
+    console.log(`  ${team(m.home_team_id).short_name} vs ${team(m.away_team_id).short_name}: ${isLive ? "EN VIVO" : `${state.setsWon.A}-${state.setsWon.B}`} (${rows.length} eventos)`);
   }
 
-  const ecuaId = await seedEcuavoley(orgs[1].id, venues[0].id);
-  console.log(`Listo. Torneos ${tournament.id} (vóley) y ${ecuaId} (ecuavóley)`);
-}
-
-// ---------- Ecuavóley: torneo interparroquial con 3 jugadores por equipo y cambio de saque ----------
-const PARISHES = [
-  { name: "Liga Parroquial Zámbiza", short: "Zámbiza", c1: "#0f766e", r: 0.56 },
-  { name: "Liga Parroquial Calderón", short: "Calderón", c1: "#b91c1c", r: 0.52 },
-  { name: "Liga Parroquial Cumbayá", short: "Cumbayá", c1: "#1d4ed8", r: 0.5 },
-  { name: "Liga Parroquial Llano Chico", short: "Llano Chico", c1: "#7c3aed", r: 0.46 },
-  { name: "Liga Parroquial Nayón", short: "Nayón", c1: "#ca8a04", r: 0.48 },
-  { name: "Liga Parroquial Tumbaco", short: "Tumbaco", c1: "#15803d", r: 0.53 },
-];
-const MEN = ["Carlos", "Luis", "Jorge", "Diego", "Andrés", "Fernando", "Pablo", "Santiago", "Javier", "Marco", "Byron", "Edison", "Wilson", "Patricio"];
-const ECUA_ROLES = ["servidor", "colocador", "volador", "servidor", "colocador", "volador", "colocador"] as const;
-
-async function seedEcuavoley(orgId: string, venueId: string) {
-  console.log("Ecuavóley: torneo interparroquial…");
-  const [t] = await q<Pick<Tournament, "id" | "best_of" | "sport" | "rules">[]>(
-    db.from("tournaments").insert([{
-      organization_id: orgId,
-      name: "Interparroquial de Ecuavóley 2026",
-      season: 2026,
-      category: "Mayores",
-      branch: "masculino",
-      city: "Quito",
-      format: "round_robin",
-      best_of: 3,
-      sport: "ecuavoley",
-      rules: null,
-      status: "active",
-    }]).select("id, best_of, sport, rules"),
-    "ecuavoley tournament",
-  );
-  const teams = await q<Team[]>(
-    db.from("teams").insert(PARISHES.map((p) => ({
-      organization_id: orgId, name: p.name, short_name: p.short, city: "Quito", province: "Pichincha",
-      color_primary: p.c1, color_secondary: "#ffffff", sport: "ecuavoley",
-    }))).select("*"),
-    "ecuavoley teams",
-  );
-  let serial = 900000;
-  const players = await q<PlayerPublic[]>(
-    db.from("players").insert(teams.flatMap((team) => Array.from({ length: 7 }, (_, i) => {
-      serial += 1 + Math.floor(rand() * 5000);
-      return {
-        team_id: team.id,
-        first_name: pick(MEN),
-        last_name: `${pick(LAST)} ${pick(LAST)}`,
-        cedula: makeCedula(17, serial),
-        birth_date: `${1985 + Math.floor(rand() * 15)}-0${1 + Math.floor(rand() * 9)}-1${Math.floor(rand() * 9)}`,
-        number: i + 1,
-        position: ECUA_ROLES[i],
-        is_libero: false,
-        is_captain: i === 0,
-      };
-    }))).select("*"),
-    "ecuavoley players",
-  );
-  await q(db.from("tournament_teams").insert(teams.map((team, i) => ({ tournament_id: t.id, team_id: team.id, seed: i + 1 }))), "ecuavoley entries");
-
-  const day0 = Date.UTC(2026, 9, 4, 15, 0); // domingos desde el 4 oct, 10:00 ECT
-  const slots = new Map<number, number>();
-  const matches = await q<{ id: string; home_team_id: string; away_team_id: string; round: number }[]>(
-    db.from("matches").insert(roundRobin(teams.map((x) => x.id)).map((f) => {
-      const slot = slots.get(f.round) ?? 0;
-      slots.set(f.round, slot + 1);
-      return {
-        tournament_id: t.id, stage: "league", round: f.round, home_team_id: f.home, away_team_id: f.away, venue_id: venueId,
-        scheduled_at: new Date(day0 + (f.round - 1) * 7 * 86400_000 + slot * 3600_000).toISOString(),
-      };
-    })).select("id, home_team_id, away_team_id, round"),
-    "ecuavoley matches",
-  );
-
-  const byTeam = (id: string) => players.filter((p) => p.team_id === id);
-  const team = (id: string) => teams.find((x) => x.id === id)!;
-  const rating = (id: string) => PARISHES[teams.findIndex((x) => x.id === id)].r;
-  let liveDone = false;
-  for (const [i, m] of matches.entries()) {
-    const finished = m.round <= 2;
-    const live = !finished && !liveDone;
-    if (!finished && !live) continue;
-    if (live) liveDone = true;
-    const setup = buildSetup(t, team(m.home_team_id), team(m.away_team_id), byTeam(m.home_team_id), byTeam(m.away_team_id));
-    const { events, state } = simulateMatch(setup, {
-      seed: 500 + i,
-      pA: 0.5 + (rating(m.home_team_id) - rating(m.away_team_id)) * 0.6,
-      stopAt: live ? { set: 2, points: 14 } : undefined,
-      signatures: { captainA: "Capitán local", captainB: "Capitán visitante", referee: REFEREES[i % REFEREES.length] },
-    });
-    const rows = events.map((e, k) => eventToRow(m.id, k + 1, e));
-    for (let k = 0; k < rows.length; k += 500) await q(db.from("match_events").insert(rows.slice(k, k + 500)), "match_events");
-    await q(db.from("matches").update(matchPatch(state, m.home_team_id, m.away_team_id)).eq("id", m.id), "match patch");
-    console.log(`  ${team(m.home_team_id).short_name} vs ${team(m.away_team_id).short_name}: ${live ? "EN VIVO" : `${state.setsWon.A}-${state.setsWon.B}`}`);
-  }
-  return t.id;
+  console.log(`Listo. Torneo ${tournament.id}`);
+  if (demo) console.log(`Partido demo (sin empezar, hoy 11:30): ${team(demo.home_team_id).short_name} vs ${team(demo.away_team_id).short_name} · /mesa/${demo.id}`);
 }
 
 main().catch((e) => {

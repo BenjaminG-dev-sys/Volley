@@ -25,14 +25,17 @@ test("planillero anota y el marcador público se actualiza en vivo", async ({ br
   for (let i = 0; i < 2; i++) await page.getByRole("button", { name: "Confirmar formación" }).first().click();
   await expect(page.getByRole("button", { name: /Punto/ }).first()).toBeVisible();
 
-  const pointButtons = page.getByRole("button", { name: /^Punto/ });
-  await pointButtons.nth(0).click();
-  await pointButtons.nth(0).click();
-  await pointButtons.nth(1).click();
-  await page.getByRole("button", { name: "Tiempo", exact: true }).first().click();
+  // Ecuavóley con cambio de saque: solo suma quien saca; el que recibe y gana la jugada recupera el saque.
+  const point = () => page.getByRole("button", { name: /^Punto/ }).first();
+  await point().click(); // 1-0 (saca el local)
+  await point().click(); // 2-0
+  await page.getByRole("button", { name: /^Gana la jugada/ }).click(); // cambio de saque, sigue 2-0
+  await point().click(); // 2-1 (ahora saca el visitante)
+  // Solo puede pedir tiempo el equipo que tiene el saque
+  await page.locator("button:not([disabled])", { hasText: /^\s*Tiempo\s*$/ }).first().click();
 
-  // Sustitución: tocar un jugador en cancha y elegir un suplente legal
-  await page.getByRole("button", { name: /Posición III: N\.º/ }).first().click();
+  // Sustitución libre: tocar un jugador en cancha y elegir un suplente
+  await page.getByRole("button", { name: /(Colocador|Volador): N\.º/ }).first().click();
   await page.getByRole("button", { name: /^Entra \d+/ }).first().click();
   await expect(page.getByText(/Sustitución .*sale/)).toBeVisible();
 
@@ -42,7 +45,7 @@ test("planillero anota y el marcador público se actualiza en vivo", async ({ br
   await expect(page.getByText("por sincronizar")).toHaveCount(0, { timeout: 15_000 });
 
   // El marcador público refleja 2-1 y el tiempo, sin recargar
-  await expect(viewer.getByText(/Punto para .*\((2-1|1-2)\)/)).toBeVisible({ timeout: 15_000 });
+  await expect(viewer.getByText(/Punto para .*\(2-1\)/)).toBeVisible({ timeout: 15_000 });
   await expect(viewer.getByText(/Tiempo para/)).toBeVisible();
   await expect(viewer.getByText(/Sustitución/)).toHaveCount(0);
 });
