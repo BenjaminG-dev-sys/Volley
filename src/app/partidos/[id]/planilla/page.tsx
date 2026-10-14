@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { MatchStats } from "@/components/match-stats";
 import { PrintButton } from "@/components/print-button";
 import { Badge, Card, LinkButton } from "@/components/ui";
 import { getMatchBundle } from "@/lib/data";
@@ -86,6 +87,10 @@ export default async function ScoresheetPage({ params }: { params: Promise<{ id:
           <SetBlock key={set.no} set={set} setup={setup} teamName={teamName} />
         ))}
         {!state.sets.length && <p className="text-muted">El partido aún no ha comenzado.</p>}
+
+        <div className="no-print">
+          <MatchStats state={state} teams={{ A: { name: home.short_name, color: home.color_primary }, B: { name: away.short_name, color: away.color_primary } }} />
+        </div>
 
         <section>
           <h2 className="mb-2 font-display text-base font-bold uppercase tracking-wide">Sanciones</h2>

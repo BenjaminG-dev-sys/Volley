@@ -54,3 +54,31 @@ export function initials(name: string, max = 3): string {
     .slice(0, max)
     .toUpperCase();
 }
+
+/** Color en OKLab (L, a, b), para medir diferencias percibidas. */
+function oklab(hex: string): [number, number, number] {
+  const [r, g, b] = parse(hex).map((c) => {
+    const s = c / 255;
+    return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  });
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [
+    0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+    1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+  ];
+}
+
+/** Diferencia perceptual (ΔE OKLab × 100). Bajo ~15 dos colores se confunden a simple vista. */
+export function deltaE(a: string, b: string): number {
+  const [l1, a1, b1] = oklab(a);
+  const [l2, a2, b2] = oklab(b);
+  return Math.hypot(l1 - l2, a1 - a2, b1 - b2) * 100;
+}
+
+/** Colores para comparar dos equipos: si se confunden, el segundo pasa a gris neutro. */
+export function distinctPair(a: string, b: string, neutral = "#8a8a8c"): [string, string] {
+  return deltaE(a, b) >= 15 ? [a, b] : [a, deltaE(a, neutral) >= 15 ? neutral : "#111111"];
+}

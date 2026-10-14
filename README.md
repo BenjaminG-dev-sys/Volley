@@ -34,6 +34,12 @@ y **planilla electrónica** para la mesa de control, con marcador público en ti
   tras una desconexión salen gratis. `matches.live_state` guarda un snapshot pequeño para los listados.
 - **Realtime**: triggers en `matches` y `match_events` publican en `match:{id}` y `live`; los clientes no pueden
   publicar (RLS en `realtime.messages`).
+- **App instalable (PWA)**: manifiesto, íconos y service worker (`public/sw.js`). Las páginas visitadas (mesa,
+  torneos, partidos, equipos) abren sin red; el resto redirige a `/offline`. Al cerrar sesión se borran las páginas
+  guardadas.
+- **Estadísticas**: calculadas con el motor a partir de la planilla (`src/lib/stats/`): puntos en saque y en
+  recepción (o cambios de saque en ecuavóley), rachas, mejor sacador, evolución del marcador por set, participación
+  de cada jugador y destacados del torneo.
 - **Offline**: la mesa guarda cada evento primero en IndexedDB y lo sincroniza en orden al volver la conexión
   (los reintentos no duplican gracias a `UNIQUE (match_id, seq)`). Si otro dispositivo ocupó la misma secuencia, la mesa
   lo detecta, adopta la planilla del servidor y ofrece reaplicar o descartar sus acciones; la consola y el marcador

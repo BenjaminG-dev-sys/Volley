@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Court } from "@/components/court";
+import { MatchStats } from "@/components/match-stats";
 import { Scoreboard } from "@/components/scoreboard";
 import { Badge, Button, Card, CardHeader, Empty, LinkButton, LiveBadge, cx } from "@/components/ui";
 import type { MatchBundle } from "@/lib/data";
@@ -149,6 +150,8 @@ export function LiveView({ bundle }: { bundle: MatchBundle }) {
           </ol>
         </Card>
       </div>
+
+      <MatchStats state={state} teams={teams} />
     </div>
   );
 }

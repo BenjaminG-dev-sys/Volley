@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contrast, initials, luminance, mix, readableOn, teamVars } from "./color";
+import { contrast, deltaE, distinctPair, initials, luminance, mix, readableOn, teamVars } from "./color";
 
 describe("contraste", () => {
   it("calcula luminancia y razón WCAG", () => {
@@ -40,5 +40,18 @@ describe("mix / teamVars / initials", () => {
     expect(initials("LDU")).toBe("LDU");
     expect(initials("Espoli")).toBe("ESP");
     expect(initials("  Mi  Club ")).toBe("MC");
+  });
+});
+
+describe("pares de colores de equipo", () => {
+  it("mide la diferencia perceptual", () => {
+    expect(deltaE("#ff0000", "#ff0000")).toBeCloseTo(0);
+    expect(deltaE("#000000", "#ffffff")).toBeGreaterThan(90);
+  });
+
+  it("conserva colores distintos y neutraliza los que se confunden", () => {
+    expect(distinctPair("#e4002b", "#1d4ed8")).toEqual(["#e4002b", "#1d4ed8"]);
+    expect(distinctPair("#e4002b", "#d0002a")).toEqual(["#e4002b", "#8a8a8c"]);
+    expect(distinctPair("#8a8a8c", "#8b8b8d")[1]).toBe("#111111");
   });
 });

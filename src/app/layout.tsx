@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, Inter } from "next/font/google";
 import Link from "next/link";
 import { BallIcon } from "@/components/icons";
+import { InstallButton, PwaRegister } from "@/components/pwa";
 import { SiteHeader, type NavItem } from "@/components/site-header";
 import { getSession, isStaff } from "@/lib/insforge/server";
 import { ROLE_LABEL } from "@/lib/types";
@@ -14,6 +15,9 @@ const display = Barlow_Condensed({ variable: "--font-display-face", subsets: ["l
 export const metadata: Metadata = {
   title: { default: "Voley EC · Torneos de voleibol", template: "%s · Voley EC" },
   description: "Torneos de vóley y ecuavóley: calendario, posiciones y planilla electrónica con marcador en vivo.",
+  applicationName: "Voley EC",
+  appleWebApp: { capable: true, title: "Voley EC", statusBarStyle: "black-translucent" },
+  icons: { apple: "/icons/192" },
 };
 
 export const viewport: Viewport = { themeColor: "#111111" };
@@ -34,6 +38,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="es-EC">
       <body className={`${inter.variable} ${display.variable} flex min-h-dvh flex-col font-sans antialiased`}>
+        <PwaRegister />
         <SiteHeader items={items} user={user} signOut={signOut} />
         <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-12">{children}</main>
         <SiteFooter />
@@ -89,6 +94,7 @@ function SiteFooter() {
           <Link className={`block ${link}`} href="/ingresar">
             Ingresar
           </Link>
+          <InstallButton className={`block ${link}`} />
         </nav>
       </div>
       <div className="border-t border-white/10">

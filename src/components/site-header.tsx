@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { BallIcon, CloseIcon, MenuIcon } from "@/components/icons";
+import { clearCachedPages } from "@/components/pwa";
 import { LinkButton, cx } from "@/components/ui";
 
 export interface NavItem {
@@ -36,7 +37,7 @@ function Account({ user, signOut, inverse }: { user: HeaderUser | null; signOut:
       </LinkButton>
     );
   return (
-    <form action={signOut} className="flex items-center gap-3 text-sm">
+    <form action={signOut} onSubmit={clearCachedPages} className="flex items-center gap-3 text-sm">
       <span className={cx("leading-tight", inverse ? "text-white/70" : "text-muted")}>
         <span className={cx("block font-medium", inverse ? "text-paper" : "text-ink")}>{user.name}</span>
         {user.role}

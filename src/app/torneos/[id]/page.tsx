@@ -9,6 +9,7 @@ import { Card, Empty, Hero, LiveBadge, Section, StatNumber, TeamCrest } from "@/
 import { getTournament, listTeams } from "@/lib/data";
 import { BRANCH_LABEL, BRANCH_TONE, fmtDateTime } from "@/lib/format";
 import { SPORT_LABEL, describeRules, resolveRules } from "@/lib/scoresheet/rules";
+import { tournamentHighlights } from "@/lib/stats/tournament";
 import { recentForm } from "@/lib/tournament/form";
 import { computeStandings } from "@/lib/tournament/standings";
 import type { Match, Team } from "@/lib/types";
@@ -49,9 +50,13 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
     awaySets: m.result!.away_sets,
   }));
   const form = new Map(entries.map((e) => [e.team_id, recentForm(e.team_id, formInput)]));
+  const highlights = tournamentHighlights(
+    finished.map((m) => ({ id: m.id, home: m.home_team_id, away: m.away_team_id, result: m.result!, bestOf: tournament.best_of })),
+  );
   const tone = BRANCH_TONE[tournament.branch];
   const nav = [
     { href: "#posiciones", label: "Posiciones" },
+    ...(finished.length ? [{ href: "#destacados", label: "Destacados" }] : []),
     ...(tournament.format === "groups_knockout" ? [{ href: "#fase-final", label: "Fase final" }] : []),
     { href: "#calendario", label: "Calendario" },
   ];
@@ -128,6 +133,44 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
         </div>
       </section>
 
+      {highlights.matches > 0 && (
+        <section id="destacados" className="scroll-mt-32">
+          <SectionTitle eyebrow="Con los resultados cerrados" title="Destacados" />
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+            <StatNumber value={highlights.matches} label="Partidos jugados" />
+            <StatNumber value={highlights.sets} label="Sets" />
+            <StatNumber value={highlights.points.toLocaleString("es-EC")} label="Puntos" />
+            <StatNumber value={highlights.decidingSets} label="Al set decisivo" />
+          </div>
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {highlights.longestSet && (
+              <HighlightCard
+                label={`Set más largo · set ${highlights.longestSet.set}`}
+                value={`${highlights.longestSet.score.home}-${highlights.longestSet.score.away}`}
+                detail={`${teamMap.get(highlights.longestSet.home)?.short_name ?? "—"} vs ${teamMap.get(highlights.longestSet.away)?.short_name ?? "—"}`}
+                href={`/partidos/${highlights.longestSet.matchId}/planilla`}
+              />
+            )}
+            {highlights.bestAttack && (
+              <HighlightCard
+                label="Mejor ataque"
+                value={highlights.bestAttack.perSet.toFixed(1)}
+                detail={`${teamMap.get(highlights.bestAttack.teamId)?.short_name ?? "—"} · puntos anotados por set`}
+                href={`/equipos/${highlights.bestAttack.teamId}`}
+              />
+            )}
+            {highlights.bestDefense && (
+              <HighlightCard
+                label="Mejor defensa"
+                value={highlights.bestDefense.perSet.toFixed(1)}
+                detail={`${teamMap.get(highlights.bestDefense.teamId)?.short_name ?? "—"} · puntos recibidos por set`}
+                href={`/equipos/${highlights.bestDefense.teamId}`}
+              />
+            )}
+          </div>
+        </section>
+      )}
+
       {tournament.format === "groups_knockout" && (
         <Section tone="ink">
           <div id="fase-final" className="scroll-mt-32" />
@@ -191,6 +234,16 @@ function SectionTitle({ eyebrow, title }: { eyebrow: string; title: string }) {
       <p className="eyebrow mb-2 text-muted">{eyebrow}</p>
       <h2 className="display-l">{title}</h2>
     </div>
+  );
+}
+
+function HighlightCard({ label, value, detail, href }: { label: string; value: string; detail: string; href: string }) {
+  return (
+    <Link href={href} className="group rounded-2xl border border-line p-5 transition hover:border-ink">
+      <p className="eyebrow text-muted">{label}</p>
+      <p className="tabular mt-2 font-display text-5xl font-extrabold leading-none">{value}</p>
+      <p className="mt-2 text-sm text-muted group-hover:text-ink">{detail} →</p>
+    </Link>
   );
 }
 
