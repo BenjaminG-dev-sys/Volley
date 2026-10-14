@@ -258,6 +258,9 @@ export function applyEvent(
 
     case "undo":
       return fail("`undo` se resuelve en replay(), no en applyEvent().");
+
+    case "reopen":
+      return fail("`reopen` se resuelve en replay(), no en applyEvent().");
   }
 }
 

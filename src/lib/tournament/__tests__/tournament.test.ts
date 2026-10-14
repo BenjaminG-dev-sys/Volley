@@ -99,3 +99,19 @@ describe("forma reciente", () => {
     expect(recentForm("z", ms)).toEqual([]);
   });
 });
+
+describe("calendario completo", () => {
+  it("arma grupos, jornadas semanales y horarios sin conflictos", async () => {
+    const { buildSchedule } = await import("../scheduler");
+    const { detectConflicts } = await import("@/lib/admin/conflicts");
+    const ids = ["a", "b", "c", "d", "e", "f", "g", "h"];
+    const s = buildSchedule({ teamIds: ids, groupCount: 2, startMs: Date.parse("2026-10-17T14:00:00Z"), venueId: "v" });
+    expect(new Set(s.groups.map((g) => g.group_label))).toEqual(new Set(["A", "B"]));
+    expect(s.matches).toHaveLength(12);
+    expect(s.matches.every((m) => m.stage === "group")).toBe(true);
+    expect(detectConflicts(s.matches.map((m, i) => ({ id: String(i), ...m })))).toEqual([]);
+    const single = buildSchedule({ teamIds: ids.slice(0, 3), groupCount: 4, startMs: 0, venueId: null });
+    expect(single.matches.every((m) => m.stage === "league" && m.group_label === null)).toBe(true);
+    expect(single.matches).toHaveLength(3);
+  });
+});

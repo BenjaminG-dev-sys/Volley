@@ -48,6 +48,8 @@ export type MatchEventInput =
   | { type: "libero_out"; team: Side }
   | { type: "sanction"; team: Side; kind: SanctionKind; player?: number | null }
   | { type: "undo" }
+  /** Reabre un partido cerrado (corrección del staff): anula las firmas y vuelve a "terminado". */
+  | { type: "reopen" }
   | { type: "close"; captainA: string; captainB: string; referee: string };
 
 export type MatchEvent = MatchEventInput & { seq: number; ts?: string };

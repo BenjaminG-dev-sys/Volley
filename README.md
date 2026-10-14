@@ -74,6 +74,27 @@ primer saque alternado y sorteo para el set decisivo · cambio de cancha a los 8
 rotar a delantera, un rally entre reemplazos · amonestación, castigo (punto y saque al rival), expulsión,
 descalificación y escalamiento por retraso · cierre con firmas.
 
+## Panel de administración
+
+`/admin` (organizadores y administradores):
+
+- **Panel**: partidos de hoy, en vivo, sin planillero o árbitro, nóminas incompletas, conflictos de horario y
+  torneos en borrador, con accesos directos. **Buscador global** (⌘K / Ctrl+K) de torneos, equipos, jugadores
+  (también por cédula), árbitros y sedes.
+- **Torneos**: asistente en 5 pasos (datos → equipos → formato → calendario → confirmar); por torneo, pestañas de
+  ajustes (reglamento, sistema de puntos 3·2·1·0 / 2·1 / 3·0, color, portada), inscripción, calendario visual con
+  arrastrar y soltar y detección de conflictos de equipo o sede, partidos (planillero, árbitros por jornada,
+  agregar, eliminar, **reabrir** un partido cerrado para corregirlo), eliminatorias para 1 a 4 grupos y exportación
+  (CSV de posiciones, calendario y nóminas; planillas de una jornada para imprimir).
+- **Equipos y nóminas**: ficha editable, logo y portada, edición y transferencia de jugadores, foto, importación de
+  nóminas por CSV con validación por fila (plantilla descargable) y exportación.
+- **Árbitros, sedes, organizaciones**, **usuarios** (roles e invitaciones por correo: el rol se aplica al crear la
+  cuenta) y **auditoría** (quién cambió qué y cuándo; cierres y reaperturas de planillas).
+- Inscripción y generación del calendario son **atómicas** (funciones SQL `set_entries` y `replace_schedule`).
+
+Las imágenes se suben al bucket público `media` de InsForge Storage (se guardan `url` y `key`). Crearlo una vez:
+`npx -y @insforge/cli storage create-bucket media --public`.
+
 ## Desarrollo local
 
 ```bash

@@ -29,7 +29,7 @@ test("planillero anota y el marcador público se actualiza en vivo", async ({ br
   await pointButtons.nth(0).click();
   await pointButtons.nth(0).click();
   await pointButtons.nth(1).click();
-  await page.getByRole("button", { name: "⏱ Tiempo" }).first().click();
+  await page.getByRole("button", { name: "Tiempo", exact: true }).first().click();
 
   // Sustitución: tocar un jugador en cancha y elegir un suplente legal
   await page.getByRole("button", { name: /Posición III: N\.º/ }).first().click();
@@ -37,7 +37,7 @@ test("planillero anota y el marcador público se actualiza en vivo", async ({ br
   await expect(page.getByText(/Sustitución .*sale/)).toBeVisible();
 
   // Deshacer la sustitución
-  await page.getByRole("button", { name: "↶ Deshacer" }).click();
+  await page.getByRole("button", { name: "Deshacer" }).click();
   await expect(page.getByText(/Sustitución .*sale/)).toHaveCount(0);
   await expect(page.getByText("por sincronizar")).toHaveCount(0, { timeout: 15_000 });
 

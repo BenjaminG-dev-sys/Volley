@@ -44,7 +44,7 @@ const REFEREES = ["Luis Paredes", "Carmen Vélez", "Jorge Almeida", "Patricia Ru
 
 async function wipe() {
   // El orden respeta las claves foráneas (match_events cae en cascada con matches).
-  for (const t of ["matches", "tournament_teams", "players", "teams", "tournaments", "venues", "organizations"]) {
+  for (const t of ["matches", "tournament_teams", "players", "teams", "tournaments", "venues", "organizations", "referees"]) {
     const key = t === "tournament_teams" ? "tournament_id" : "id";
     await q(db.from(t).delete().not(key, "is", null), `wipe ${t}`);
   }
@@ -73,6 +73,14 @@ async function main() {
       { name: "Coliseo Municipal Río Tomebamba", city: "Cuenca", province: "Azuay" },
     ]).select("id, city"),
     "venues",
+  );
+
+  console.log("Árbitros…");
+  await q(
+    db.from("referees").insert(
+      REFEREES.map((name, i) => ({ name, city: ["Quito", "Guayaquil", "Cuenca"][i % 3], level: i < 2 ? "nacional" : "provincial", active: true })),
+    ),
+    "referees",
   );
 
   console.log("Torneo…");

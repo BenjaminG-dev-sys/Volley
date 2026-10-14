@@ -11,7 +11,7 @@ import { BRANCH_LABEL, BRANCH_TONE, fmtDateTime } from "@/lib/format";
 import { SPORT_LABEL, describeRules, resolveRules } from "@/lib/scoresheet/rules";
 import { tournamentHighlights } from "@/lib/stats/tournament";
 import { recentForm } from "@/lib/tournament/form";
-import { computeStandings } from "@/lib/tournament/standings";
+import { computeStandings, pointsLegend, standingsConfig } from "@/lib/tournament/standings";
 import type { Match, Team } from "@/lib/types";
 import { STAGE_LABEL } from "@/lib/types";
 
@@ -54,6 +54,7 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
     finished.map((m) => ({ id: m.id, home: m.home_team_id, away: m.away_team_id, result: m.result!, bestOf: tournament.best_of })),
   );
   const tone = BRANCH_TONE[tournament.branch];
+  const pointsConfig = standingsConfig(tournament.standings);
   const nav = [
     { href: "#posiciones", label: "Posiciones" },
     ...(finished.length ? [{ href: "#destacados", label: "Destacados" }] : []),
@@ -65,7 +66,9 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
     <div className="space-y-14">
       <LiveRefresher tournamentId={id} />
       <Hero
-        tone={tone}
+        tone={tournament.color ? "team" : tone}
+        color={tournament.color ?? undefined}
+        image={tournament.cover_url}
         eyebrow={`${SPORT_LABEL[tournament.sport ?? "voley"]} · Temporada ${tournament.season} · ${tournament.category} · ${BRANCH_LABEL[tournament.branch]}`}
         title={tournament.name}
         sub={`${tournament.city ? `${tournament.city} · ` : ""}${tournament.format === "groups_knockout" ? "Fase de grupos y eliminatorias" : "Todos contra todos"} · ${describeRules(resolveRules(tournament.sport ?? "voley", tournament.rules, tournament.best_of)).split(" · ").slice(1).join(" · ")}`}
@@ -102,7 +105,7 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
 
       <section id="posiciones" className="scroll-mt-32">
         <SectionTitle
-          eyebrow={tournament.best_of === 3 ? "Puntos: 2-0 = 3 · 2-1 = 2 y 1" : "Puntos FIVB: 3-0 / 3-1 = 3 · 3-2 = 2 y 1"}
+          eyebrow={pointsLegend(pointsConfig, tournament.best_of)}
           title="Posiciones"
         />
         <div className="grid gap-6 xl:grid-cols-2">
@@ -112,6 +115,7 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
             const table = computeStandings(
               teamIds,
               groupFinished.map((m) => ({ home: m.home_team_id, away: m.away_team_id, sets: m.result!.sets, bestOf: tournament.best_of })),
+              pointsConfig,
             );
             return (
               <Card key={g} className="overflow-hidden">

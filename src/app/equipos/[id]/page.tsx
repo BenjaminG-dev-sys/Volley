@@ -13,7 +13,7 @@ import { getTeamBundle } from "@/lib/data";
 import { BRANCH_LABEL } from "@/lib/format";
 import { SPORT_LABEL } from "@/lib/scoresheet/rules";
 import { recentForm } from "@/lib/tournament/form";
-import { computeStandings } from "@/lib/tournament/standings";
+import { computeStandings, standingsConfig } from "@/lib/tournament/standings";
 import { STAGE_LABEL } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -49,6 +49,7 @@ export default async function TeamProfile({ params }: { params: Promise<{ id: st
       tournamentMatches
         .filter((m) => m.tournament_id === t.id && (m.stage === "group" || m.stage === "league") && m.result)
         .map((m) => ({ home: m.home_team_id, away: m.away_team_id, sets: m.result!.sets, bestOf: t.best_of })),
+      standingsConfig(t.standings),
     );
     const pos = table.findIndex((r) => r.teamId === team.id);
     return { t, group, pos: pos + 1, size: table.length, row: table[pos] };
@@ -66,6 +67,7 @@ export default async function TeamProfile({ params }: { params: Promise<{ id: st
       <Hero
         tone="team"
         color={team.color_primary}
+        image={team.cover_url}
         eyebrow={`${SPORT_LABEL[team.sport ?? "voley"]}${team.city ? ` · ${team.city}` : ""}${team.province ? `, ${team.province}` : ""}`}
         title={team.short_name}
         sub={team.name}
