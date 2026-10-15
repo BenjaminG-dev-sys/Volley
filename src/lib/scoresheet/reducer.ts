@@ -145,6 +145,13 @@ export function applyEvent(
       return state;
     }
 
+    case "switch_sides": {
+      if (state.phase !== "playing" && state.phase !== "lineups") fail("El cambio de cancha solo se registra durante el partido.");
+      state.leftTeam = otherSide(state.leftTeam);
+      log(`Cambio de cancha: ${name(state.leftTeam)} a la izquierda`);
+      return state;
+    }
+
     case "substitution": {
       const s = requirePlaying();
       const { team, out, in: inn } = event;

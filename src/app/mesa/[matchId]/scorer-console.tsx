@@ -7,6 +7,7 @@ import { Scoreboard } from "@/components/scoreboard";
 import { CardIcon, TimeoutIcon, UndoIcon } from "@/components/icons";
 import { readableOn } from "@/lib/color";
 import { Badge, Button, Card, Field, LinkButton, cx, inputCls } from "@/components/ui";
+import { MesaToolbar } from "./mesa-toolbar";
 import type { MatchBundle } from "@/lib/data";
 import { insforge } from "@/lib/insforge/client";
 import { buildSetup, eventToRow, matchPatch, rowToEvent } from "@/lib/match";
@@ -306,6 +307,10 @@ export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
         <div role="alert" className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-lg rounded-xl bg-live px-4 py-3 text-center font-medium text-white shadow-lg">
           {toast}
         </div>
+      )}
+
+      {(state.phase === "lineups" || state.phase === "playing") && (
+        <MesaToolbar matchId={match.id} state={state} setup={setup} colors={colors} record={record} />
       )}
 
       {state.phase === "coin_toss" && <TossPanel setup={setup} deciding={state.currentSet === state.bestOf} onSubmit={record} />}

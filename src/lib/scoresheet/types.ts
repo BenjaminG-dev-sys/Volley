@@ -43,6 +43,7 @@ export type MatchEventInput =
   | { type: "lineup"; team: Side; positions: number[]; liberos?: number[] }
   | { type: "point"; team: Side }
   | { type: "timeout"; team: Side }
+  | { type: "switch_sides" }
   | { type: "substitution"; team: Side; out: number; in: number }
   | { type: "libero_in"; team: Side; libero: number; replaced: number }
   | { type: "libero_out"; team: Side }

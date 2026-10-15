@@ -44,7 +44,27 @@ export const TimeoutIcon = (p: IconProps) => (
   </Svg>
 );
 
-export const SwapIcon = (p: IconProps) => (
+export const PauseIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M10 9v6M14 9v6" />
+  </Svg>
+);
+
+export const PlayIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M8 5.5v13l10.5-6.5z" />
+  </Svg>
+);
+
+export const ResetIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 12a8 8 0 1 0 2.4-5.7" />
+    <path d="M4 4v4.5h4.5" />
+  </Svg>
+);
+
+export const SwapIcon =(p: IconProps) => (
   <Svg {...p}>
     <path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" />
   </Svg>
