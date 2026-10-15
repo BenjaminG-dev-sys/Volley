@@ -3,7 +3,7 @@
 Demo full stack para ligas y asociaciones de voleibol en Ecuador: torneos, calendario, tabla de posiciones FIVB
 y **planilla electrónica** para la mesa de control, con marcador público en tiempo real.
 
-**Demo en la nube:** https://my4nm2i7.insforge.site
+**Producción:** https://voley.integroecuador.com
 
 | Usuario | Contraseña | Rol | Qué puede hacer |
 |---|---|---|---|
@@ -114,7 +114,8 @@ npm run dev                  # http://localhost:3000
 | `npm run test:e2e` | Playwright: flujo de mesa + marcador en vivo y panel de admin (`BASE_URL` para apuntar a la nube). Modifica datos: luego `npm run seed && npm run seed:users` |
 
 Base de datos: migraciones en `migrations/` (`npx -y @insforge/cli db migrations up --all`).
-Despliegue: `npx -y @insforge/cli deployments deploy .` (variables `NEXT_PUBLIC_INSFORGE_*` ya configuradas en InsForge).
+Despliegue: la web se publica en **Hostinger** (hosting Node.js) en https://voley.integroecuador.com, con las variables `NEXT_PUBLIC_INSFORGE_*` de `.env.local`.
+InsForge se usa solo como backend (base de datos, auth, storage y realtime): **no** usar `insforge deployments deploy`.
 
 > Para la demo se desactivó la verificación de correo en InsForge (`insforge.toml` → `require_email_verification = false`)
 > porque las cuentas `@demo.ec` no reciben correo. Antes de producción conviene volver a activarla y aplicar con
