@@ -25,6 +25,11 @@ test("planillero anota y el marcador público se actualiza en vivo", async ({ br
   for (let i = 0; i < 2; i++) await page.getByRole("button", { name: "Confirmar formación" }).first().click();
   await expect(page.getByRole("button", { name: /Punto/ }).first()).toBeVisible();
 
+  await expect(page.getByText("Juego bloqueado.")).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Punto/ }).first()).toBeDisabled();
+  await page.getByRole("button", { name: "Iniciar cronómetro" }).click();
+  await expect(page.getByText("Juego bloqueado.")).toHaveCount(0);
+
   // Ecuavóley con cambio de saque: solo suma quien saca; el que recibe y gana la jugada recupera el saque.
   const point = () => page.getByRole("button", { name: /^Punto/ }).first();
   await point().click(); // 1-0 (saca el local)

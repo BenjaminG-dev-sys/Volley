@@ -51,7 +51,9 @@ function useNow(active: boolean, every: number) {
   return now;
 }
 
-function useStopwatch(matchId: string) {
+export type Stopwatch = ReturnType<typeof useStopwatch>;
+
+export function useStopwatch(matchId: string) {
   const [clock, setClock] = useState<Clock>(STOPPED);
   useEffect(() => setClock(loadClock(matchId)), [matchId]);
   const now = useNow(clock.running, 500);
@@ -101,19 +103,18 @@ const tile =
   "flex min-h-20 w-full flex-col items-center justify-center gap-1 rounded-xl border-[1.5px] border-line px-2 py-3 text-sm font-semibold transition hover:border-ink active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40";
 
 export function MesaToolbar({
-  matchId,
+  stopwatch,
   state,
   setup,
   colors,
   record,
 }: {
-  matchId: string;
+  stopwatch: Stopwatch;
   state: MatchState;
   setup: MatchSetup;
   colors: Record<Side, string>;
   record: (e: MatchEventInput) => void;
 }) {
-  const stopwatch = useStopwatch(matchId);
   const countdown = useTimeoutCountdown(state);
   const [picking, setPicking] = useState(false);
 
@@ -123,7 +124,7 @@ export function MesaToolbar({
   const left = state.leftTeam;
   const right: Side = left === "A" ? "B" : "A";
   const timeoutsLeft = (s: Side) => timeoutsPerSet - (set?.teams[s].timeouts ?? 0);
-  const canTimeout = (s: Side) => playing && !!set && timeoutsLeft(s) > 0 && !(timeoutsOnlyServing && state.serving !== s);
+  const canTimeout = (s: Side) => playing && stopwatch.running && !!set && timeoutsLeft(s) > 0 && !(timeoutsOnlyServing && state.serving !== s);
   const anyTimeout = canTimeout("A") || canTimeout("B");
 
   useEffect(() => {
@@ -135,7 +136,7 @@ export function MesaToolbar({
   };
 
   const resetStopwatch = () => {
-    if (confirm("¿Reiniciar el cronómetro a 0:00?")) stopwatch.reset();
+    if (confirm("¿Reiniciar el cronómetro a 0:00? Se detiene y no se podrán registrar jugadas hasta iniciarlo de nuevo.")) stopwatch.reset();
   };
 
   const callTimeout = (s: Side) => {
@@ -154,11 +155,14 @@ export function MesaToolbar({
               type="button"
               onClick={stopwatch.toggle}
               aria-pressed={stopwatch.running}
-              className={cx(tile, stopwatch.running && "border-primary bg-primary text-primary-contrast hover:border-primary")}
+              className={cx(
+                tile,
+                stopwatch.running ? "border-primary bg-primary text-primary-contrast hover:border-primary" : "border-live text-live hover:border-live",
+              )}
             >
               <span className="flex items-center gap-1.5">
                 {stopwatch.running ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
-                Cronómetro
+                {stopwatch.running ? "Cronómetro" : stopwatch.elapsed > 0 ? "Reanudar" : "Iniciar"}
               </span>
               <span className="tabular font-display text-2xl font-extrabold leading-none">{formatClock(stopwatch.elapsed)}</span>
             </button>
@@ -175,7 +179,7 @@ export function MesaToolbar({
             )}
           </div>
 
-          <button type="button" onClick={switchSides} disabled={!playing && state.phase !== "lineups"} className={tile}>
+          <button type="button" onClick={switchSides} disabled={!stopwatch.running || (!playing && state.phase !== "lineups")} className={tile}>
             <SwapIcon size={22} />
             Cambio de cancha
           </button>

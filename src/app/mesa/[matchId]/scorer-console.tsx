@@ -7,7 +7,7 @@ import { Scoreboard } from "@/components/scoreboard";
 import { CardIcon, TimeoutIcon, UndoIcon } from "@/components/icons";
 import { readableOn } from "@/lib/color";
 import { Badge, Button, Card, Field, LinkButton, cx, inputCls } from "@/components/ui";
-import { MesaToolbar } from "./mesa-toolbar";
+import { MesaToolbar, useStopwatch } from "./mesa-toolbar";
 import type { MatchBundle } from "@/lib/data";
 import { insforge } from "@/lib/insforge/client";
 import { buildSetup, eventToRow, matchPatch, rowToEvent } from "@/lib/match";
@@ -43,6 +43,8 @@ export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
   );
   const colors: Record<Side, string> = { A: home.color_primary, B: away.color_primary };
 
+  const stopwatch = useStopwatch(match.id);
+  const clockStopped = !stopwatch.running;
   const [synced, setSyncedState] = useState<Row[]>(bundle.events);
   const [queued, setQueuedState] = useState<PendingRow[]>([]);
   const [online, setOnline] = useState(true);
@@ -202,6 +204,8 @@ export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
       if (ev.type === "undo") {
         if (undoDepth === 0) return;
       } else {
+        if (clockStopped && (state.phase === "playing" || ev.type === "switch_sides"))
+          return showError("El cronómetro está detenido: inícialo para registrar jugadas.");
         const err = validateEvent(state, ev, setup);
         if (err) return showError(err);
       }
@@ -213,7 +217,7 @@ export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
       if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(15);
       void flush();
     },
-    [state, setup, undoDepth, match.id, flush, showError, updateQueued],
+    [state, setup, undoDepth, clockStopped, match.id, flush, showError, updateQueued],
   );
 
   /** Vuelve a encolar las acciones en conflicto al final de la planilla, omitiendo las que ya no son válidas. */
@@ -310,13 +314,22 @@ export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
       )}
 
       {(state.phase === "lineups" || state.phase === "playing") && (
-        <MesaToolbar matchId={match.id} state={state} setup={setup} colors={colors} record={record} />
+        <MesaToolbar stopwatch={stopwatch} state={state} setup={setup} colors={colors} record={record} />
       )}
 
       {state.phase === "coin_toss" && <TossPanel setup={setup} deciding={state.currentSet === state.bestOf} onSubmit={record} />}
       {state.phase === "lineups" && <LineupsPanel state={state} setup={setup} onSubmit={record} />}
+      {state.phase === "playing" && clockStopped && (
+        <Card role="alert" className="flex flex-wrap items-center justify-between gap-3 border-live p-4">
+          <p className="text-sm">
+            <strong>Juego bloqueado.</strong> El cronómetro está detenido: no se registran puntos, tiempos, sustituciones ni sanciones.
+          </p>
+          <Button onClick={stopwatch.toggle}>{stopwatch.elapsed > 0 ? "Reanudar cronómetro" : "Iniciar cronómetro"}</Button>
+        </Card>
+      )}
       {state.phase === "playing" && (
         <PlayingPanel
+          locked={clockStopped}
           state={state}
           setup={setup}
           colors={colors}
@@ -463,6 +476,7 @@ function LineupEditor({ side, state, setup, onSubmit }: { side: Side; state: Mat
 
 // ---------- En juego ----------
 function PlayingPanel({
+  locked,
   state,
   setup,
   colors,
@@ -472,6 +486,7 @@ function PlayingPanel({
   setSelected,
   record,
 }: {
+  locked: boolean;
   state: MatchState;
   setup: MatchSetup;
   colors: Record<Side, string>;
@@ -504,7 +519,7 @@ function PlayingPanel({
   );
 
   return (
-    <div className="space-y-4">
+    <fieldset disabled={locked} aria-disabled={locked} className={cx("min-w-0 space-y-4", locked && "pointer-events-none select-none opacity-40 grayscale")}>
       <div className="grid grid-cols-2 gap-4">
         {pointBtn(left)}
         {pointBtn(right)}
@@ -529,7 +544,7 @@ function PlayingPanel({
           <TeamActions key={s} side={s} state={state} setup={setup} record={record} />
         ))}
       </div>
-    </div>
+    </fieldset>
   );
 }
 
