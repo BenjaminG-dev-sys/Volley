@@ -1,5 +1,11 @@
 # Gestión de Torneos de Voleibol
 
+> **Rama `demo/ligas-rurales-quito`** — demo de marca para la **Asociación de Ligas Rurales del Cantón Quito**:
+> logo, colores (azul marino, rojo, amarillo, naranja y lavanda del emblema), nombre en toda la web, ícono de la app
+> instalable, imagen para compartir en WhatsApp/redes, planilla oficial con el sello de la Asociación y textos pensados
+> para su estructura (directiva → ligas parroquiales afiliadas → partidos). La marca se configura en `src/lib/brand.ts`
+> y los recursos están en `public/brand/`.
+
 Demo full stack para ligas y asociaciones de voleibol en Ecuador: torneos, calendario, tabla de posiciones FIVB
 y **planilla electrónica** para la mesa de control, con marcador público en tiempo real.
 

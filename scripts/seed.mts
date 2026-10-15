@@ -6,6 +6,7 @@
 import { createAdminClient } from "@insforge/sdk";
 import { buildSetup, eventToRow, matchPatch } from "../src/lib/match";
 import { simulateMatch, rng } from "../src/lib/scoresheet/simulate";
+import { BRAND } from "../src/lib/brand";
 import { makeCedula } from "../src/lib/tournament/cedula";
 import { roundRobin, snakeGroups, groupLabel } from "../src/lib/tournament/scheduler";
 import type { PlayerPublic, Team, Tournament } from "../src/lib/types";
@@ -28,25 +29,24 @@ const MEN = ["Carlos", "Luis", "Jorge", "Diego", "Andrés", "Fernando", "Pablo",
 const LAST = ["Andrade", "Zambrano", "Cedeño", "Guerrero", "Mendoza", "Vera", "Paredes", "Chávez", "Morales", "Salazar",
   "Quiñónez", "Bravo", "Villacís", "Ortiz", "Jaramillo", "Loor", "Castro", "Cevallos", "Benítez", "Montalvo"];
 
-// 16 parroquias rurales del Distrito Metropolitano de Quito. `zone` elige la asociación
-// (1 = norte, 2 = valles) y `r` es el nivel relativo para la simulación.
+// 16 ligas parroquiales rurales del cantón Quito afiliadas a la Asociación. `r` es el nivel relativo para la simulación.
 const PARISHES = [
-  { name: "Liga Parroquial Zámbiza", short: "Zámbiza", c1: "#0f766e", zone: 1, r: 0.56 },
-  { name: "Liga Parroquial Calderón", short: "Calderón", c1: "#b91c1c", zone: 1, r: 0.52 },
-  { name: "Liga Parroquial Cumbayá", short: "Cumbayá", c1: "#1d4ed8", zone: 2, r: 0.5 },
-  { name: "Liga Parroquial Llano Chico", short: "Llano Chico", c1: "#7c3aed", zone: 1, r: 0.46 },
-  { name: "Liga Parroquial Nayón", short: "Nayón", c1: "#ca8a04", zone: 1, r: 0.48 },
-  { name: "Liga Parroquial Tumbaco", short: "Tumbaco", c1: "#15803d", zone: 2, r: 0.53 },
-  { name: "Liga Parroquial Pomasqui", short: "Pomasqui", c1: "#ea580c", zone: 1, r: 0.51 },
-  { name: "Liga Parroquial Conocoto", short: "Conocoto", c1: "#0369a1", zone: 2, r: 0.49 },
-  { name: "Liga Parroquial Amaguaña", short: "Amaguaña", c1: "#be185d", zone: 2, r: 0.55 },
-  { name: "Liga Parroquial Pifo", short: "Pifo", c1: "#4d7c0f", zone: 2, r: 0.47 },
-  { name: "Liga Parroquial Puembo", short: "Puembo", c1: "#9333ea", zone: 2, r: 0.5 },
-  { name: "Liga Parroquial Yaruquí", short: "Yaruquí", c1: "#c2410c", zone: 2, r: 0.45 },
-  { name: "Liga Parroquial Alangasí", short: "Alangasí", c1: "#0891b2", zone: 2, r: 0.52 },
-  { name: "Liga Parroquial Guayllabamba", short: "Guayllabamba", c1: "#a16207", zone: 1, r: 0.44 },
-  { name: "Liga Parroquial Píntag", short: "Píntag", c1: "#1e3a8a", zone: 2, r: 0.54 },
-  { name: "Liga Parroquial El Quinche", short: "El Quinche", c1: "#991b1b", zone: 2, r: 0.48 },
+  { name: "Liga Parroquial Zámbiza", short: "Zámbiza", c1: "#0f766e", r: 0.56 },
+  { name: "Liga Parroquial Calderón", short: "Calderón", c1: "#b91c1c", r: 0.52 },
+  { name: "Liga Parroquial Cumbayá", short: "Cumbayá", c1: "#1d4ed8", r: 0.5 },
+  { name: "Liga Parroquial Llano Chico", short: "Llano Chico", c1: "#7c3aed", r: 0.46 },
+  { name: "Liga Parroquial Nayón", short: "Nayón", c1: "#ca8a04", r: 0.48 },
+  { name: "Liga Parroquial Tumbaco", short: "Tumbaco", c1: "#15803d", r: 0.53 },
+  { name: "Liga Parroquial Pomasqui", short: "Pomasqui", c1: "#ea580c", r: 0.51 },
+  { name: "Liga Parroquial Conocoto", short: "Conocoto", c1: "#0369a1", r: 0.49 },
+  { name: "Liga Parroquial Amaguaña", short: "Amaguaña", c1: "#be185d", r: 0.55 },
+  { name: "Liga Parroquial Pifo", short: "Pifo", c1: "#4d7c0f", r: 0.47 },
+  { name: "Liga Parroquial Puembo", short: "Puembo", c1: "#9333ea", r: 0.5 },
+  { name: "Liga Parroquial Yaruquí", short: "Yaruquí", c1: "#c2410c", r: 0.45 },
+  { name: "Liga Parroquial Alangasí", short: "Alangasí", c1: "#0891b2", r: 0.52 },
+  { name: "Liga Parroquial Guayllabamba", short: "Guayllabamba", c1: "#a16207", r: 0.44 },
+  { name: "Liga Parroquial Píntag", short: "Píntag", c1: "#1e3a8a", r: 0.54 },
+  { name: "Liga Parroquial El Quinche", short: "El Quinche", c1: "#991b1b", r: 0.48 },
 ];
 // 3 titulares (servidor, colocador, volador) + 3 suplentes; el tope de ecuavóley es 7.
 const ECUA_ROLES = ["servidor", "colocador", "volador", "servidor", "colocador", "volador"] as const;
@@ -76,9 +76,8 @@ async function main() {
   console.log("Organizaciones, sedes y árbitros…");
   const orgs = await q<{ id: string; short_name: string }[]>(
     db.from("organizations").insert([
-      { name: "Liga Cantonal de Ecuavóley de Quito (demo)", short_name: "LCEQ", kind: "league", province: "Pichincha" },
-      { name: "Asociación de Ligas Parroquiales del Norte", short_name: "ALP Norte", kind: "association", province: "Pichincha" },
-      { name: "Asociación de Ligas Parroquiales de los Valles", short_name: "ALP Valles", kind: "association", province: "Pichincha" },
+      { name: BRAND.name, short_name: BRAND.acronym, kind: "association", province: "Pichincha" },
+      ...PARISHES.map((p) => ({ name: p.name, short_name: p.short, kind: "league", province: "Pichincha" })),
     ]).select("id, short_name"),
     "organizations",
   );
@@ -101,7 +100,7 @@ async function main() {
   const [tournament] = await q<Pick<Tournament, "id" | "best_of" | "sport" | "rules">[]>(
     db.from("tournaments").insert([{
       organization_id: orgs[0].id,
-      name: "Interparroquial de Ecuavóley 2026",
+      name: "Campeonato Interparroquial de Ecuavóley 2026",
       season: 2026,
       category: "Mayores",
       branch: "masculino",
@@ -117,8 +116,8 @@ async function main() {
 
   console.log("Equipos y jugadores…");
   const teams = await q<Team[]>(
-    db.from("teams").insert(PARISHES.map((p) => ({
-      organization_id: orgs[p.zone].id,
+    db.from("teams").insert(PARISHES.map((p, i) => ({
+      organization_id: orgs[i + 1].id,
       name: p.name, short_name: p.short, city: "Quito", province: "Pichincha",
       color_primary: p.c1, color_secondary: "#ffffff", sport: "ecuavoley",
     }))).select("*"),

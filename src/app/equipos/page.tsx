@@ -5,7 +5,7 @@ import { Card, Empty, PageHeader } from "@/components/ui";
 import { listTeams } from "@/lib/data";
 import { SPORT_LABEL, type Sport } from "@/lib/scoresheet/rules";
 
-export const metadata: Metadata = { title: "Equipos" };
+export const metadata: Metadata = { title: "Ligas parroquiales" };
 export const dynamic = "force-dynamic";
 
 export default async function TeamsIndex({ searchParams }: { searchParams: Promise<{ deporte?: string }> }) {
@@ -16,7 +16,11 @@ export default async function TeamsIndex({ searchParams }: { searchParams: Promi
 
   return (
     <div className="space-y-12">
-      <PageHeader eyebrow={`${teams.length} clubes`} title="Equipos" sub="Nóminas, calendario y resultados de cada club." />
+      <PageHeader
+        eyebrow={`${teams.length} ligas afiliadas`}
+        title="Ligas parroquiales"
+        sub="Las selecciones de cada liga parroquial afiliada a la Asociación: nóminas, calendario y resultados."
+      />
       <nav aria-label="Deporte" className="-mt-6 flex flex-wrap gap-2">
         {[{ id: null, label: "Todo" }, ...(["voley", "ecuavoley"] as const).map((s) => ({ id: s, label: SPORT_LABEL[s] }))].map((m) => {
           const active = filter === m.id;
@@ -45,7 +49,7 @@ export default async function TeamsIndex({ searchParams }: { searchParams: Promi
               </div>
             ) : (
               <Card>
-                <Empty>Aún no hay equipos de {SPORT_LABEL[s].toLowerCase()}.</Empty>
+                <Empty>Aún no hay ligas inscritas en {SPORT_LABEL[s].toLowerCase()}.</Empty>
               </Card>
             )}
           </section>

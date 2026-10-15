@@ -10,17 +10,17 @@ describe("contraste", () => {
   });
 
   it("elige texto negro o blanco legible (AA) sobre los colores de campaña", () => {
-    expect(readableOn("#d4ff3a")).toBe("#111111"); // volt
-    expect(readableOn("#ffd100")).toBe("#111111"); // sun
-    expect(readableOn("#ff6b1a")).toBe("#111111"); // court
-    expect(readableOn("#2459f5")).toBe("#ffffff"); // sky
+    expect(readableOn("#f2c230")).toBe("#001a5c");
+    expect(readableOn("#ffd100")).toBe("#001a5c");
+    expect(readableOn("#ee7a2e")).toBe("#001a5c");
+    expect(readableOn("#2b3990")).toBe("#ffffff");
     expect(readableOn("#1d4ed8")).toBe("#ffffff");
-    for (const bg of ["#d4ff3a", "#ffd100", "#ff6b1a", "#2459f5", "#111111", "#ffffff"])
+    for (const bg of ["#f2c230", "#ffd100", "#ee7a2e", "#2b3990", "#001a5c", "#e4243c", "#ffffff"])
       expect(contrast(bg, readableOn(bg))).toBeGreaterThanOrEqual(4.5);
   });
 
   it("tolera colores inválidos o abreviados", () => {
-    expect(teamVars("nope")["--team"]).toBe("#111111");
+    expect(teamVars("nope")["--team"]).toBe("#001a5c");
     expect(teamVars("#fff")["--team"]).toBe("#ffffff");
   });
 });
@@ -52,6 +52,6 @@ describe("pares de colores de equipo", () => {
   it("conserva colores distintos y neutraliza los que se confunden", () => {
     expect(distinctPair("#e4002b", "#1d4ed8")).toEqual(["#e4002b", "#1d4ed8"]);
     expect(distinctPair("#e4002b", "#d0002a")).toEqual(["#e4002b", "#8a8a8c"]);
-    expect(distinctPair("#8a8a8c", "#8b8b8d")[1]).toBe("#111111");
+    expect(distinctPair("#8a8a8c", "#8b8b8d")[1]).toBe("#001a5c");
   });
 });

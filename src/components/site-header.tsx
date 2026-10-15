@@ -4,9 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { BallIcon, CloseIcon, MenuIcon } from "@/components/icons";
+import Image from "next/image";
+import { CloseIcon, MenuIcon } from "@/components/icons";
 import { clearCachedPages } from "@/components/pwa";
+import { BrandBand } from "@/components/brand";
 import { LinkButton, cx } from "@/components/ui";
+import { BRAND } from "@/lib/brand";
 
 export interface NavItem {
   href: string;
@@ -15,11 +18,31 @@ export interface NavItem {
 
 const isActive = (path: string, href: string) => (href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`));
 
-export function Logo() {
+export function Emblem({ size = 40, className }: { size?: number; className?: string }) {
   return (
-    <Link href="/" className="flex items-center gap-2" aria-label="Voley EC, inicio">
-      <BallIcon size={26} strokeWidth={2} />
-      <span className="font-display text-2xl font-extrabold uppercase leading-none tracking-tight">Voley EC</span>
+    <span
+      className={cx("inline-grid shrink-0 place-items-center rounded-full bg-paper ring-1 ring-black/10", className)}
+      style={{ width: size, height: size }}
+    >
+      <Image src={BRAND.emblem} alt="" width={Math.round(size * 0.86)} height={Math.round(size * 0.86)} priority />
+    </span>
+  );
+}
+
+function Wordmark({ inverse }: { inverse?: boolean }) {
+  return (
+    <span className="flex flex-col font-display uppercase leading-[0.9]">
+      <span className={cx("text-[1.35rem] font-extrabold tracking-tight", inverse ? "text-paper" : "text-ink")}>{BRAND.wordmark.top}</span>
+      <span className={cx("text-[0.8rem] font-bold tracking-[0.18em]", inverse ? "text-volt" : "text-rose")}>{BRAND.wordmark.bottom}</span>
+    </span>
+  );
+}
+
+export function Logo({ inverse }: { inverse?: boolean }) {
+  return (
+    <Link href="/" className="flex items-center gap-2.5" aria-label={`${BRAND.name}, inicio`}>
+      <Emblem size={42} />
+      <Wordmark inverse={inverse} />
     </Link>
   );
 }
@@ -63,7 +86,8 @@ export function SiteHeader({ items, user, signOut }: { items: NavItem[]; user: H
 
   return (
     <header className="no-print sticky top-0 z-40 border-b border-line bg-bg/95 backdrop-blur">
-      <div className="mx-auto flex h-[60px] max-w-[1440px] items-center gap-6 px-4 sm:px-6 lg:px-12">
+      <BrandBand height={4} />
+      <div className="mx-auto flex h-[64px] max-w-[1440px] items-center gap-6 px-4 sm:px-6 lg:px-12">
         <Logo />
         <nav className="ml-auto hidden items-center gap-6 text-[15px] font-medium md:flex" aria-label="Principal">
           {items.map((it) => (
@@ -89,8 +113,8 @@ export function SiteHeader({ items, user, signOut }: { items: NavItem[]; user: H
       {open &&
         createPortal(
         <div className="fixed inset-0 z-50 flex flex-col bg-black text-paper md:hidden" role="dialog" aria-modal="true" aria-label="Menú">
-          <div className="flex h-[60px] items-center justify-between px-4">
-            <span className="font-display text-2xl font-extrabold uppercase">Voley EC</span>
+          <div className="flex h-[68px] items-center justify-between px-4">
+            <Logo inverse />
             <button className="grid h-10 w-10 place-items-center rounded-full hover:bg-white/10" onClick={() => setOpen(false)} aria-label="Cerrar menú">
               <CloseIcon size={24} />
             </button>
@@ -110,13 +134,7 @@ export function SiteHeader({ items, user, signOut }: { items: NavItem[]; user: H
           <div className="border-t border-white/15 p-4">
             <Account user={user} signOut={signOut} inverse />
           </div>
-          <div className="flex h-2" aria-hidden>
-            <span className="flex-1 bg-orange" />
-            <span className="flex-1 bg-sky" />
-            <span className="flex-1 bg-sun" />
-            <span className="flex-1 bg-rose" />
-            <span className="flex-1 bg-volt" />
-          </div>
+          <BrandBand />
         </div>,
           document.body,
         )}

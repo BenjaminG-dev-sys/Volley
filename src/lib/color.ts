@@ -1,13 +1,13 @@
 // Utilidades de color puras: contraste WCAG y variables CSS para "teñir" una página
 // con el color de un equipo o torneo.
 
-const INK = "#111111";
+const INK = "#001a5c";
 const PAPER = "#ffffff";
 
 function parse(hex: string): [number, number, number] {
   let h = hex.trim().replace(/^#/, "");
   if (h.length === 3) h = [...h].map((c) => c + c).join("");
-  if (!/^[0-9a-f]{6}$/i.test(h)) return [17, 17, 17];
+  if (!/^[0-9a-f]{6}$/i.test(h)) return [0, 26, 92];
   return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)) as [number, number, number];
 }
 
@@ -80,5 +80,5 @@ export function deltaE(a: string, b: string): number {
 
 /** Colores para comparar dos equipos: si se confunden, el segundo pasa a gris neutro. */
 export function distinctPair(a: string, b: string, neutral = "#8a8a8c"): [string, string] {
-  return deltaE(a, b) >= 15 ? [a, b] : [a, deltaE(a, neutral) >= 15 ? neutral : "#111111"];
+  return deltaE(a, b) >= 15 ? [a, b] : [a, deltaE(a, neutral) >= 15 ? neutral : INK];
 }

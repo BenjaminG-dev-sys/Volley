@@ -6,12 +6,31 @@ import { MatchRow } from "@/components/match-row";
 import { ResultsMarquee } from "@/components/results-marquee";
 import { TeamTile } from "@/components/team-tile";
 import { Badge, Card, CardHeader, Empty, Hero, LinkButton, LiveBadge, Section, TeamCrest } from "@/components/ui";
+import { BRAND } from "@/lib/brand";
 import { listMatches, listTeams, listTournaments } from "@/lib/data";
 import { BRANCH_LABEL, BRANCH_TONE } from "@/lib/format";
 import { SPORT_LABEL, type Sport } from "@/lib/scoresheet/rules";
 import type { Match, Team, Tournament } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+const STEPS = [
+  {
+    title: "La directiva arma el campeonato",
+    body: "Categorías, grupos, calendario por jornada, sedes y árbitros de todo el interparroquial en un solo lugar.",
+    tone: "bg-sky text-paper",
+  },
+  {
+    title: "Cada liga inscribe su nómina",
+    body: "Las ligas parroquiales registran a sus deportistas con validación de cédula y edad según la categoría.",
+    tone: "bg-rose text-paper",
+  },
+  {
+    title: "La parroquia lo sigue en vivo",
+    body: "El planillero anota desde el celular, aunque se caiga la señal, y el marcador llega a la pantalla y a los teléfonos.",
+    tone: "bg-sun text-black",
+  },
+] as const;
 
 const MODES = [
   { id: "todo", label: "Todo" },
@@ -39,29 +58,29 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
     <div className="space-y-14">
       <LiveRefresher />
       <Hero
-        tone={sport === "ecuavoley" ? "sun" : "court"}
-        eyebrow={sport === "ecuavoley" ? "Ecuavóley en Ecuador" : sport === "voley" ? "Vóley en Ecuador" : "Vóley y ecuavóley en Ecuador"}
+        tone="esfera"
+        eyebrow={BRAND.name}
         title={
           <>
-            Cada punto
+            Cada liga,
             <br />
-            en vivo
+            <span className="text-volt">en vivo</span>
           </>
         }
         sub={
           sport === "ecuavoley"
-            ? "Planilla de ecuavóley con cambio de saque: lo que anota la mesa de control aparece aquí al instante."
-            : "Torneos, posiciones y planilla electrónica: lo que anota la mesa de control aparece aquí al instante."
+            ? "El ecuavóley de las parroquias rurales con planilla de cambio de saque: lo que anota la mesa de control llega al instante a la cancha y al celular."
+            : "Campeonatos interparroquiales de vóley y ecuavóley: calendario, posiciones y planilla electrónica. Lo que anota la mesa de control llega al instante a la cancha y al celular."
         }
         actions={
           <>
             {live[0] && (
-              <LinkButton size="lg" href={`/partidos/${live[0].id}/en-vivo`}>
+              <LinkButton size="lg" variant="campaign" href={`/partidos/${live[0].id}/en-vivo`}>
                 Ver partido en vivo <ArrowRightIcon size={18} />
               </LinkButton>
             )}
-            <LinkButton size="lg" variant={live[0] ? "inverse" : "primary"} href="#torneos">
-              Ver torneos
+            <LinkButton size="lg" variant="inverse" href="#torneos">
+              Ver campeonatos
             </LinkButton>
           </>
         }
@@ -106,15 +125,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
         <div id="torneos" className="scroll-mt-24" />
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="eyebrow mb-3 opacity-80">Temporada en curso</p>
-            <h2 className="display-l">Torneos</h2>
+            <p className="eyebrow mb-3 opacity-80">Temporada {new Date().getFullYear()}</p>
+            <h2 className="display-l">Campeonatos</h2>
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           {active.map((t) => (
             <TournamentTile key={t.id} t={t} />
           ))}
-          {!active.length && <p className="opacity-80">Aún no hay torneos publicados.</p>}
+          {!active.length && <p className="opacity-80">Aún no hay campeonatos publicados.</p>}
         </div>
       </Section>
 
@@ -132,7 +151,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
       {teams.length > 0 && (
         <section>
           <div className="flex flex-wrap items-end justify-between gap-4">
-            <SectionTitle eyebrow={`${teams.length} clubes`} title="Equipos" />
+            <SectionTitle eyebrow={`${teams.length} ligas afiliadas`} title="Ligas parroquiales" />
             <LinkButton variant="secondary" href={sport ? `/equipos?deporte=${sport}` : "/equipos"} className="mb-6">
               Ver todos <ArrowRightIcon size={16} />
             </LinkButton>
@@ -145,19 +164,25 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ d
         </section>
       )}
 
-      <Section tone="sun">
-        <div className="grid items-end gap-8 lg:grid-cols-[1fr_auto]">
+      <Section tone="lavender">
+        <div className="mb-10 grid items-end gap-6 lg:grid-cols-[1fr_auto]">
           <div>
-            <p className="eyebrow mb-3">Para ligas y asociaciones</p>
-            <h2 className="display-l max-w-3xl">Lleva la planilla de tu liga al celular</h2>
-            <p className="mt-4 max-w-xl text-lg">
-              Reglas FIVB, funciona sin conexión y el marcador llega en vivo a la pantalla grande y a los teléfonos del público.
-            </p>
+            <p className="eyebrow mb-3 text-rose">Cómo trabaja la Asociación</p>
+            <h2 className="display-l max-w-3xl">De la directiva a la cancha de cada parroquia</h2>
           </div>
           <LinkButton size="lg" href="/ingresar">
             Ingresar a la mesa <ArrowRightIcon size={18} />
           </LinkButton>
         </div>
+        <ol className="grid gap-4 md:grid-cols-3">
+          {STEPS.map((step, i) => (
+            <li key={step.title} className="rounded-2xl bg-surface p-6 ring-1 ring-line">
+              <span className={`grid h-11 w-11 place-items-center rounded-full font-display text-xl font-extrabold ${step.tone}`}>{i + 1}</span>
+              <h3 className="mt-5 font-display text-2xl font-bold uppercase leading-tight">{step.title}</h3>
+              <p className="mt-2 text-muted">{step.body}</p>
+            </li>
+          ))}
+        </ol>
       </Section>
     </div>
   );
@@ -211,7 +236,7 @@ function FeaturedMatch({ match, teams }: { match: Match; teams: Map<string, Team
 
 function TournamentTile({ t }: { t: Tournament }) {
   const tone = BRANCH_TONE[t.branch];
-  const bg = { rose: "bg-rose text-black", sky: "bg-paper text-black", sun: "bg-sun text-black" }[tone];
+  const bg = { rose: "bg-rose text-paper", sky: "bg-paper text-black", sun: "bg-sun text-black" }[tone];
   return (
     <Link href={`/torneos/${t.id}`} className={`group flex min-h-56 flex-col justify-between rounded-2xl p-6 transition hover:-translate-y-0.5 ${bg}`}>
       <div className="flex flex-wrap gap-2">

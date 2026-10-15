@@ -104,8 +104,8 @@ function Half({
                   onPlayerClick && "hover:scale-105",
                 )}
                 style={{
-                  background: isLibero ? "#111111" : team.color,
-                  color: isLibero ? "#d4ff3a" : readableOn(team.color),
+                  background: isLibero ? "var(--ink)" : team.color,
+                  color: isLibero ? "var(--volt)" : readableOn(team.color),
                                   }}
                 aria-label={`${label.length > 3 ? label : `Posición ${label}`}: N.º ${n}${isServer ? ", saca" : ""}${isLibero ? ", líbero" : ""}`}
               >

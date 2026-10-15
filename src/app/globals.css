@@ -2,53 +2,50 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/*
- * Sistema visual: base monocromo estilo Nike (blanco, negro, grises) + colores de campaña
- * en bloques planos. El color de cada equipo llega como `--team` (ver src/lib/color.ts).
- */
 :root {
   --bg: #ffffff;
   --surface: #ffffff;
-  --surface-2: #f5f5f5;
-  --border: #e5e5e5;
-  --text: #111111;
-  --muted: #707072;
-  /* Botón principal negro sobre claro. */
-  --primary: #111111;
+  --surface-2: #f1f2f9;
+  --border: #dde0ee;
+  --text: #0b1747;
+  --muted: #5d6488;
+  --primary: #002478;
   --primary-contrast: #ffffff;
-  --ink: #111111;
+  --ink: #001a5c;
   --paper: #ffffff;
 
-  /* Campaña */
-  --volt: #d4ff3a;
-  --court-orange: #ff6b1a;
-  --sky: #2459f5;
-  --sun: #ffd100;
-  --rose: #ff3d7f;
+  --volt: #f2c230;
+  --court-orange: #ee7a2e;
+  --sky: #2b3990;
+  --sun: #f2c230;
+  --rose: #e4243c;
+  --lavender: #9c95c4;
+  --lavender-soft: #ebe9f6;
 
   --accent: var(--sun);
-  --live: #d0002a;
-  --ok: #00843d;
+  --live: #e4243c;
+  --ok: #0f7a3d;
 
-  /* Cancha */
   --court: #e8a95a;
   --court-line: #ffffff;
 
-  --team: #111111;
+  --team: #001a5c;
   --team-ink: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #111111;
-    --surface: #1c1c1c;
-    --surface-2: #262626;
-    --border: #333333;
-    --text: #f5f5f5;
-    --muted: #a1a1a3;
-    --primary: #ffffff;
-    --primary-contrast: #111111;
-    --live: #ff4d6a;
+    --bg: #060b24;
+    --surface: #0d1538;
+    --surface-2: #162050;
+    --border: #26316b;
+    --text: #eef0fa;
+    --muted: #a4a9c9;
+    --primary: #f2c230;
+    --primary-contrast: #001a5c;
+    --ink: #030719;
+    --lavender-soft: #1b2458;
+    --live: #ff4d63;
     --ok: #3ddc84;
     --court: #b5773a;
     --court-line: #f1e3cf;
@@ -71,6 +68,8 @@
   --color-sky: var(--sky);
   --color-sun: var(--sun);
   --color-rose: var(--rose);
+  --color-lavender: var(--lavender);
+  --color-lavender-soft: var(--lavender-soft);
   --color-accent: var(--accent);
   --color-live: var(--live);
   --color-ok: var(--ok);
@@ -148,6 +147,36 @@ body {
   pointer-events: none;
 }
 
+.bg-esfera {
+  background-color: var(--sky);
+  background-image:
+    radial-gradient(circle at 108% -8%, #c3bee0 0%, #9c95c4 16%, rgba(43, 57, 144, 0) 46%),
+    radial-gradient(circle at 10% 110%, rgba(228, 36, 60, 0.55) 0%, rgba(228, 36, 60, 0) 38%),
+    linear-gradient(160deg, #2b3990 0%, #001a5c 100%);
+}
+
+@media (min-width: 1024px) {
+  .bg-esfera {
+    background-image:
+      radial-gradient(circle at 84% 24%, #f4f2fb 0%, #c3bee0 14%, #9c95c4 26%, rgba(43, 57, 144, 0) 52%),
+      radial-gradient(circle at 10% 110%, rgba(228, 36, 60, 0.55) 0%, rgba(228, 36, 60, 0) 38%),
+      linear-gradient(160deg, #2b3990 0%, #001a5c 100%);
+  }
+}
+
+.brand-band {
+  display: flex;
+  height: 0.5rem;
+}
+.brand-band > span {
+  flex: 1;
+}
+.brand-band > span:nth-child(1) { background: var(--rose); }
+.brand-band > span:nth-child(2) { background: var(--sun); }
+.brand-band > span:nth-child(3) { background: var(--court-orange); }
+.brand-band > span:nth-child(4) { background: var(--sky); }
+.brand-band > span:nth-child(5) { background: var(--lavender); }
+
 .underline-anim {
   background: linear-gradient(currentColor, currentColor) no-repeat 0 100% / 0 2px;
   transition: background-size 250ms ease;
@@ -201,7 +230,7 @@ body {
   justify-content: center;
   gap: 2rem;
   padding: 3vw;
-  background: #111111;
+  background: var(--ink);
 }
 
 @media (prefers-reduced-motion: reduce) {

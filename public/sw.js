@@ -3,7 +3,7 @@
 // - Páginas: primero red; si no hay red, la última copia guardada o /offline.
 //   Así la mesa de control (/mesa/*) abre sin conexión y su cola local (IndexedDB) sincroniza al volver.
 // - Nunca se guardan /api, /admin ni respuestas de otros dominios (InsForge); sin red, /admin muestra /offline.
-const VERSION = "v1";
+const VERSION = "ligas-rurales-v1";
 const STATIC = `static-${VERSION}`;
 const PAGES = `pages-${VERSION}`;
 const OFFLINE_URL = "/offline";
@@ -38,7 +38,7 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET" || url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/")) return;
 
-  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/")) {
+  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/brand/")) {
     event.respondWith(
       caches.open(STATIC).then(async (cache) => {
         const hit = await cache.match(req);

@@ -102,7 +102,9 @@ const TONES = {
   court: "bg-orange text-black",
   sky: "bg-sky text-paper",
   sun: "bg-sun text-black",
-  rose: "bg-rose text-black",
+  rose: "bg-rose text-paper",
+  lavender: "bg-lavender-soft text-ink",
+  esfera: "bg-esfera text-paper",
   team: "bg-team text-team-ink",
 } as const;
 export type Tone = keyof typeof TONES;
