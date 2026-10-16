@@ -101,6 +101,33 @@ export const CloseIcon = (p: IconProps) => (
   </Svg>
 );
 
+export const DownloadIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 4v11M7 10.5l5 5 5-5M5 20h14" />
+  </Svg>
+);
+
+export const ShareIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 3v12M8 7l4-4 4 4M8 11H6a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-2" />
+  </Svg>
+);
+
+export const AddSquareIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="4" y="4" width="16" height="16" rx="3" />
+    <path d="M12 8.5v7M8.5 12h7" />
+  </Svg>
+);
+
+export const DotsIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="5.5" r="1" fill="currentColor" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" />
+    <circle cx="12" cy="18.5" r="1" fill="currentColor" />
+  </Svg>
+);
+
 /** Tarjeta de sanción rellena con el color dado (amarilla o roja). */
 export function CardIcon({ color, ...p }: IconProps & { color: string }) {
   return (

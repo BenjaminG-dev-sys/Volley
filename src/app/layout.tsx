@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, Inter } from "next/font/google";
 import Link from "next/link";
 import { BrandBand, BrandSeal } from "@/components/brand";
-import { InstallButton, PwaRegister } from "@/components/pwa";
+import { InstallButton, InstallPrompt, PwaRegister } from "@/components/pwa";
 import { SiteHeader, type NavItem } from "@/components/site-header";
 import { BRAND } from "@/lib/brand";
 import { getSession, isStaff } from "@/lib/insforge/server";
@@ -45,6 +45,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <SiteHeader items={items} user={user} signOut={signOut} />
         <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-12">{children}</main>
         <SiteFooter />
+        <InstallPrompt />
       </body>
     </html>
   );
