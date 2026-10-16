@@ -32,8 +32,8 @@ export function Emblem({ size = 40, className }: { size?: number; className?: st
 function Wordmark({ inverse }: { inverse?: boolean }) {
   return (
     <span className="flex flex-col font-display uppercase leading-[0.9]">
-      <span className={cx("text-[1.35rem] font-extrabold tracking-tight", inverse ? "text-paper" : "text-ink")}>{BRAND.wordmark.top}</span>
-      <span className={cx("text-[0.8rem] font-bold tracking-[0.18em]", inverse ? "text-volt" : "text-rose")}>{BRAND.wordmark.bottom}</span>
+      <span className={cx("text-[1rem] font-extrabold tracking-tight sm:text-[1.3rem]", inverse ? "text-paper" : "text-ink")}>{BRAND.wordmark.top}</span>
+      <span className={cx("mt-0.5 text-[0.72rem] font-bold tracking-[0.16em] sm:text-[0.82rem]", inverse ? "text-volt" : "text-rose")}>{BRAND.wordmark.bottom}</span>
     </span>
   );
 }

@@ -2,7 +2,7 @@ export const BRAND = {
   name: "Asociación de Ligas Rurales del Cantón Quito",
   short: "Ligas Rurales Quito",
   acronym: "ALRCQ",
-  wordmark: { top: "Ligas Rurales", bottom: "Cantón Quito" },
+  wordmark: { top: "Asociación de Ligas Rurales", bottom: "del Cantón Quito" },
   description:
     "Campeonatos interparroquiales de vóley y ecuavóley de la Asociación de Ligas Rurales del Cantón Quito: calendario, posiciones, nóminas y planilla electrónica con marcador en vivo.",
   logo: "/brand/logo.png",
