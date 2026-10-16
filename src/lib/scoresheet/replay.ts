@@ -25,6 +25,12 @@ export function replayDetailed(setup: MatchSetup, events: MatchEvent[]): ReplayR
       if (stack.length > 1) stack.pop();
       continue;
     }
+    if (ev.type === "reopen") {
+      // Solo deshace el cierre con firmas: el partido vuelve a "terminado" y se puede corregir con "deshacer".
+      if (stack[stack.length - 1].phase === "closed") stack.pop();
+      else rejected.push({ seq: ev.seq, error: "Solo se puede reabrir un partido cerrado." });
+      continue;
+    }
     try {
       stack.push(applyEvent(stack[stack.length - 1], ev, setup));
     } catch (e) {

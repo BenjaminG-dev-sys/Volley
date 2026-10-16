@@ -3,13 +3,15 @@
 Demo full stack para ligas y asociaciones de voleibol en Ecuador: torneos, calendario, tabla de posiciones FIVB
 y **planilla electrónica** para la mesa de control, con marcador público en tiempo real.
 
-**Demo en la nube:** https://my4nm2i7.insforge.site
+**Producción:** https://voley.integroecuador.com
 
 | Usuario | Contraseña | Rol | Qué puede hacer |
 |---|---|---|---|
 | `admin@demo.ec` | `Voley2026!` | Administrador | Todo, incluido asignar roles |
 | `organizador@demo.ec` | `Voley2026!` | Organizador | Torneos, equipos, nóminas, calendario, asignaciones |
 | `planillero@demo.ec` | `Voley2026!` | Planillero | Llevar la planilla de los partidos asignados |
+| `arbitro@demo.ec` | `Voley2026!` | Árbitro | Ver el sitio con sesión iniciada (rol reservado; aún sin permisos propios) |
+| `publico@demo.ec` | `Voley2026!` | Público (con cuenta) | Lo mismo que sin cuenta |
 | _(sin cuenta)_ | | Público | Portada, torneos, posiciones, marcador en vivo, planilla final |
 
 ## Guion de demostración (≈5 min)
@@ -34,11 +36,37 @@ y **planilla electrónica** para la mesa de control, con marcador público en ti
   tras una desconexión salen gratis. `matches.live_state` guarda un snapshot pequeño para los listados.
 - **Realtime**: triggers en `matches` y `match_events` publican en `match:{id}` y `live`; los clientes no pueden
   publicar (RLS en `realtime.messages`).
+- **App instalable (PWA)**: manifiesto, íconos y service worker (`public/sw.js`). Las páginas visitadas (mesa,
+  torneos, partidos, equipos) abren sin red; el resto redirige a `/offline`. Al cerrar sesión se borran las páginas
+  guardadas.
+- **Estadísticas**: calculadas con el motor a partir de la planilla (`src/lib/stats/`): puntos en saque y en
+  recepción (o cambios de saque en ecuavóley), rachas, mejor sacador, evolución del marcador por set, participación
+  de cada jugador y destacados del torneo.
 - **Offline**: la mesa guarda cada evento primero en IndexedDB y lo sincroniza en orden al volver la conexión
-  (los reintentos no duplican gracias a `UNIQUE (match_id, seq)`).
+  (los reintentos no duplican gracias a `UNIQUE (match_id, seq)`). Si otro dispositivo ocupó la misma secuencia, la mesa
+  lo detecta, adopta la planilla del servidor y ofrece reaplicar o descartar sus acciones; la consola y el marcador
+  público escuchan `match:{id}` y releen la planilla al reconectarse.
 - **Seguridad (RLS)**: lectura pública de información deportiva; escritura solo para staff; la planilla solo la
   escribe el planillero asignado; la cédula y la fecha de nacimiento solo las ve el staff (el público lee la vista
-  `players_public`).
+  `players_public`). El servidor valida el resultado que publica la mesa (marcadores posibles, sets ganados), deriva el
+  ganador y solo acepta cerrar el partido si la planilla tiene el evento `close`.
+
+### Dos modos de juego: Vóley y Ecuavóley
+
+Cada torneo elige su deporte y reglamento (`tournaments.sport` y `tournaments.rules`); el motor aplica un `RuleSet`
+(`src/lib/scoresheet/rules.ts`) y la mesa, la cancha, el marcador y la planilla se adaptan solos.
+
+| | Vóley (FIVB) | Ecuavóley (por defecto) |
+|---|---|---|
+| Jugadores | 6, rotación, hasta 2 líberos | 3 con roles fijos (servidor, colocador, volador), sin líbero ni rotación |
+| Sets | Al mejor de 5 (o 3), a 25; decisivo a 15 | Al mejor de 3, a 15 (variantes a 12 o 10) |
+| Puntuación | Rally point | Con cambio: solo suma quien saca; si gana el receptor, recupera el saque (variante punto directo) |
+| Tiempos / sustituciones | 2 por set / 6 (titular ↔ suplente) | 2 por set solo con el saque / 6 libres |
+| Cambio de cancha | Decisivo a los 8 | 3.er set a los 8 (a los 6 si es a 12) |
+| Nómina | 14 jugadores, 2 líberos | 7 jugadores (3 + 4 suplentes) |
+
+El ecuavóley no tiene un reglamento oficial único; los valores por defecto siguen los reglamentos de torneos más
+citados y se pueden ajustar por torneo.
 
 ### Reglas FIVB implementadas (`src/lib/scoresheet/`)
 
@@ -47,6 +75,27 @@ primer saque alternado y sorteo para el set decisivo · cambio de cancha a los 8
 6 sustituciones por set (titular ↔ suplente, una vuelta por set) · hasta 2 líberos: solo zagueros, no saca, sale al
 rotar a delantera, un rally entre reemplazos · amonestación, castigo (punto y saque al rival), expulsión,
 descalificación y escalamiento por retraso · cierre con firmas.
+
+## Panel de administración
+
+`/admin` (organizadores y administradores):
+
+- **Panel**: partidos de hoy, en vivo, sin planillero o árbitro, nóminas incompletas, conflictos de horario y
+  torneos en borrador, con accesos directos. **Buscador global** (⌘K / Ctrl+K) de torneos, equipos, jugadores
+  (también por cédula), árbitros y sedes.
+- **Torneos**: asistente en 5 pasos (datos → equipos → formato → calendario → confirmar); por torneo, pestañas de
+  ajustes (reglamento, sistema de puntos 3·2·1·0 / 2·1 / 3·0, color, portada), inscripción, calendario visual con
+  arrastrar y soltar y detección de conflictos de equipo o sede, partidos (planillero, árbitros por jornada,
+  agregar, eliminar, **reabrir** un partido cerrado para corregirlo), eliminatorias para 1 a 4 grupos y exportación
+  (CSV de posiciones, calendario y nóminas; planillas de una jornada para imprimir).
+- **Equipos y nóminas**: ficha editable, logo y portada, edición y transferencia de jugadores, foto, importación de
+  nóminas por CSV con validación por fila (plantilla descargable) y exportación.
+- **Árbitros, sedes, organizaciones**, **usuarios** (roles e invitaciones por correo: el rol se aplica al crear la
+  cuenta) y **auditoría** (quién cambió qué y cuándo; cierres y reaperturas de planillas).
+- Inscripción y generación del calendario son **atómicas** (funciones SQL `set_entries` y `replace_schedule`).
+
+Las imágenes se suben al bucket público `media` de InsForge Storage (se guardan `url` y `key`). Crearlo una vez:
+`npx -y @insforge/cli storage create-bucket media --public`.
 
 ## Desarrollo local
 
@@ -60,16 +109,22 @@ npm run dev                  # http://localhost:3000
 |---|---|
 | `npm test` | Pruebas del motor de reglas, calendario, posiciones y cédula (Vitest) |
 | `npm run lint` / `npm run build` | Lint y compilación de producción |
-| `npm run seed` | Reemplaza los datos demo (torneo, 8 clubes, 96 jugadoras, partidos simulados con el motor) |
+| `npm run seed` | Reemplaza los datos demo: torneo de vóley (8 clubes de parroquias rurales de Quito, 96 jugadoras) e interparroquial de ecuavóley (6 parroquias), con partidos simulados con el motor |
 | `npm run seed:users` | Crea/actualiza los usuarios demo y asigna al planillero los partidos pendientes |
 | `npm run test:e2e` | Playwright: flujo de mesa + marcador en vivo y panel de admin (`BASE_URL` para apuntar a la nube). Modifica datos: luego `npm run seed && npm run seed:users` |
 
 Base de datos: migraciones en `migrations/` (`npx -y @insforge/cli db migrations up --all`).
-Despliegue: `npx -y @insforge/cli deployments deploy .` (variables `NEXT_PUBLIC_INSFORGE_*` ya configuradas en InsForge).
+Despliegue: la web se publica en **Hostinger** (hosting Node.js) en https://voley.integroecuador.com, con las variables `NEXT_PUBLIC_INSFORGE_*` de `.env.local`.
+InsForge se usa solo como backend (base de datos, auth, storage y realtime): **no** usar `insforge deployments deploy`.
 
 > Para la demo se desactivó la verificación de correo en InsForge (`insforge.toml` → `require_email_verification = false`)
 > porque las cuentas `@demo.ec` no reciben correo. Antes de producción conviene volver a activarla y aplicar con
 > `npx -y @insforge/cli config apply`.
+
+## Video de presentación
+
+En `video/` hay un proyecto Remotion independiente con el video promocional (ver `video/README.md`).
+No forma parte del build ni del despliegue de la app.
 
 ## Fuera del alcance de esta demo
 

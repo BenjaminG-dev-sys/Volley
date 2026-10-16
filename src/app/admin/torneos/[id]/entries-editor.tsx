@@ -8,7 +8,7 @@ import { setEntries } from "../../actions";
 export function EntriesEditor({ tournamentId, teams, selected, locked }: { tournamentId: string; teams: Team[]; selected: string[]; locked: boolean }) {
   const [ids, setIds] = useState(selected);
   const [pending, start] = useTransition();
-  const [saved, setSaved] = useState(false);
+  const [result, setResult] = useState<{ error: string | null; ok?: string | null } | null>(null);
   return (
     <div className="space-y-3 p-4">
       <div className="grid gap-2 sm:grid-cols-2">
@@ -19,7 +19,7 @@ export function EntriesEditor({ tournamentId, teams, selected, locked }: { tourn
               disabled={locked}
               checked={ids.includes(t.id)}
               onChange={(e) => {
-                setSaved(false);
+                setResult(null);
                 setIds((x) => (e.target.checked ? [...x, t.id] : x.filter((y) => y !== t.id)));
               }}
             />
@@ -35,15 +35,19 @@ export function EntriesEditor({ tournamentId, teams, selected, locked }: { tourn
           disabled={pending}
           onClick={() =>
             start(async () => {
-              await setEntries(tournamentId, ids);
-              setSaved(true);
+              setResult(await setEntries(tournamentId, ids));
             })
           }
         >
           {pending ? "Guardando…" : `Guardar inscripción (${ids.length})`}
         </Button>
       )}
-      {saved && <span className="ml-3 text-sm text-ok">Inscripción guardada.</span>}
+      {result?.ok && <span className="ml-3 text-sm text-ok">{result.ok}</span>}
+      {result?.error && (
+        <span role="alert" className="ml-3 text-sm text-live">
+          {result.error}
+        </span>
+      )}
     </div>
   );
 }

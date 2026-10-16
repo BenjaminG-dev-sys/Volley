@@ -1,5 +1,7 @@
 import { POSITION_LABELS, type Side } from "@/lib/scoresheet";
 import { cx } from "@/components/ui";
+import { ServeIcon } from "@/components/icons";
+import { readableOn } from "@/lib/color";
 
 // Media cancha vista desde la mesa. Índices 0..5 = posiciones I..VI.
 // Equipo a la izquierda (mira a la derecha): columna delantera junto a la red IV/III/II (arriba→abajo),
@@ -13,6 +15,18 @@ const RIGHT_LAYOUT = [
   [1, 0], // II, I
   [2, 5], // III, VI
   [3, 4], // IV, V
+];
+// Ecuavóley (índices 0..2 = servidor, colocador, volador; -1 = celda vacía):
+// el colocador junto a la red, servidor y volador atrás.
+const ECUA_LEFT = [
+  [2, -1],
+  [-1, 1],
+  [0, -1],
+];
+const ECUA_RIGHT = [
+  [-1, 0],
+  [1, -1],
+  [-1, 2],
 ];
 
 export interface CourtTeam {
@@ -30,18 +44,22 @@ export function Court({
   onPlayerClick,
   selected,
   size = "md",
+  labels = POSITION_LABELS,
 }: {
   left: CourtTeam;
   right: CourtTeam;
   onPlayerClick?: (side: Side, number: number, index: number) => void;
   selected?: { side: Side; number: number } | null;
   size?: "md" | "lg";
+  /** Nombre de cada posición (I..VI en vóley; Servidor/Colocador/Volador en ecuavóley). */
+  labels?: readonly string[];
 }) {
+  const ecua = left.positions.length === 3;
   return (
     <div className="relative mx-auto grid aspect-[2/1] max-w-3xl grid-cols-2 overflow-hidden rounded-xl border-4 border-court-line bg-court">
-      <Half team={left} layout={LEFT_LAYOUT} onPlayerClick={onPlayerClick} selected={selected} size={size} />
+      <Half team={left} layout={ecua ? ECUA_LEFT : LEFT_LAYOUT} labels={labels} onPlayerClick={onPlayerClick} selected={selected} size={size} />
       <div className="absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 bg-court-line shadow" aria-hidden />
-      <Half team={right} layout={RIGHT_LAYOUT} onPlayerClick={onPlayerClick} selected={selected} size={size} />
+      <Half team={right} layout={ecua ? ECUA_RIGHT : RIGHT_LAYOUT} labels={labels} onPlayerClick={onPlayerClick} selected={selected} size={size} />
     </div>
   );
 }
@@ -49,12 +67,14 @@ export function Court({
 function Half({
   team,
   layout,
+  labels,
   onPlayerClick,
   selected,
   size,
 }: {
   team: CourtTeam;
   layout: number[][];
+  labels: readonly string[];
   onPlayerClick?: (side: Side, number: number, index: number) => void;
   selected?: { side: Side; number: number } | null;
   size: "md" | "lg";
@@ -63,8 +83,11 @@ function Half({
     <div className="grid grid-rows-3 place-items-center p-2 sm:p-3">
       {layout.map((row, r) => (
         <div key={r} className="grid w-full grid-cols-2 place-items-center">
-          {row.map((idx) => {
+          {row.map((idx, c) => {
+            if (idx < 0) return <span key={`empty-${c}`} aria-hidden />;
             const n = team.positions[idx];
+            const label = labels[idx] ?? "";
+            const short = label.length > 3 ? label.slice(0, 3).toUpperCase() : label;
             const isServer = team.serving && idx === 0;
             const isLibero = team.libero === n;
             const isSel = selected?.side === team.side && selected.number === n;
@@ -81,17 +104,16 @@ function Half({
                   onPlayerClick && "hover:scale-105",
                 )}
                 style={{
-                  background: isLibero ? "#111827" : team.color,
-                  color: isLibero ? "#fde047" : "#fff",
-                  textShadow: "0 1px 2px rgba(0,0,0,.35)",
-                }}
-                aria-label={`Posición ${POSITION_LABELS[idx]}: N.º ${n}${isServer ? ", saca" : ""}${isLibero ? ", líbero" : ""}`}
+                  background: isLibero ? "#111111" : team.color,
+                  color: isLibero ? "#d4ff3a" : readableOn(team.color),
+                                  }}
+                aria-label={`${label.length > 3 ? label : `Posición ${label}`}: N.º ${n}${isServer ? ", saca" : ""}${isLibero ? ", líbero" : ""}`}
               >
                 {n}
-                <span className="text-[10px] font-medium opacity-80">{POSITION_LABELS[idx]}</span>
+                <span className="text-[10px] font-medium opacity-80">{short}</span>
                 {isServer && (
-                  <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-accent text-[11px] shadow" title="Saca">
-                    🏐
+                  <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-volt text-black shadow" title="Saca">
+                    <ServeIcon size={13} strokeWidth={2.4} />
                   </span>
                 )}
               </El>

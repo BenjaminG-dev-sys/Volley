@@ -56,10 +56,16 @@ export function simulateMatch(setup: MatchSetup, opts: SimulateOptions): { event
     if (state.phase === "lineups") {
       for (const t of ["A", "B"] as Side[]) {
         const pool = nonLibero(t);
+        const n = state.rules.playersOnCourt;
         // Rota la formación base para variar entre sets
-        const shift = Math.floor(rand() * 6);
-        const six = pool.slice(0, 6);
-        tryAdd({ type: "lineup", team: t, positions: six.map((_, i) => six[(i + shift) % 6]), liberos: liberos(t).slice(0, 2) });
+        const shift = Math.floor(rand() * n);
+        const base = pool.slice(0, n);
+        tryAdd({
+          type: "lineup",
+          team: t,
+          positions: base.map((_, i) => base[(i + shift) % n]),
+          liberos: liberos(t).slice(0, state.rules.liberos),
+        });
       }
       continue;
     }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { validateCategoryAge } from "../categories";
 import { cedulaCheckDigit, makeCedula, validateCedula } from "../cedula";
 import { crossSemis, roundRobin, snakeGroups } from "../scheduler";
+import { recentForm } from "../form";
 import { computeStandings, matchPoints } from "../standings";
 
 describe("cédula ecuatoriana", () => {
@@ -80,5 +81,37 @@ describe("tabla de posiciones FIVB", () => {
     expect(byId.z.points).toBe(4);
     expect(table.map((r) => r.teamId)).toEqual(["z", "x", "y"]);
     expect(byId.y).toMatchObject({ played: 2, won: 1, lost: 1, setsWon: 3, setsLost: 5 });
+  });
+});
+
+describe("forma reciente", () => {
+  const m = (home: string, away: string, day: number, hs: number, as: number) => ({
+    home,
+    away,
+    scheduledAt: `2026-10-${String(day).padStart(2, "0")}T15:00:00Z`,
+    homeSets: hs,
+    awaySets: as,
+  });
+  it("devuelve los últimos resultados en orden cronológico", () => {
+    const ms = [m("a", "b", 5, 3, 1), m("c", "a", 1, 3, 0), m("a", "d", 9, 2, 3), m("b", "c", 3, 3, 0)];
+    expect(recentForm("a", ms)).toEqual(["P", "G", "P"]);
+    expect(recentForm("a", ms, 2)).toEqual(["G", "P"]);
+    expect(recentForm("z", ms)).toEqual([]);
+  });
+});
+
+describe("calendario completo", () => {
+  it("arma grupos, jornadas semanales y horarios sin conflictos", async () => {
+    const { buildSchedule } = await import("../scheduler");
+    const { detectConflicts } = await import("@/lib/admin/conflicts");
+    const ids = ["a", "b", "c", "d", "e", "f", "g", "h"];
+    const s = buildSchedule({ teamIds: ids, groupCount: 2, startMs: Date.parse("2026-10-17T14:00:00Z"), venueId: "v" });
+    expect(new Set(s.groups.map((g) => g.group_label))).toEqual(new Set(["A", "B"]));
+    expect(s.matches).toHaveLength(12);
+    expect(s.matches.every((m) => m.stage === "group")).toBe(true);
+    expect(detectConflicts(s.matches.map((m, i) => ({ id: String(i), ...m })))).toEqual([]);
+    const single = buildSchedule({ teamIds: ids.slice(0, 3), groupCount: 4, startMs: 0, venueId: null });
+    expect(single.matches.every((m) => m.stage === "league" && m.group_label === null)).toBe(true);
+    expect(single.matches).toHaveLength(3);
   });
 });

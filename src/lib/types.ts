@@ -1,5 +1,8 @@
 // Filas de la base de datos (InsForge / PostgREST).
 
+import type { RuleOverrides, Sport } from "./scoresheet/rules";
+import type { StandingsConfig } from "./tournament/standings";
+
 export type Role = "admin" | "organizer" | "scorer" | "referee" | "viewer";
 export type MatchStatus = "scheduled" | "live" | "finished";
 export type Stage = "league" | "group" | "semifinal" | "third_place" | "final";
@@ -30,6 +33,14 @@ export interface Tournament {
   format: "round_robin" | "groups_knockout";
   best_of: 3 | 5;
   status: "draft" | "active" | "finished";
+  sport: Sport;
+  /** Ajustes del reglamento respecto del preset del deporte. */
+  rules: RuleOverrides | null;
+  /** Sistema de puntos de la tabla (ver `standingsConfig`). */
+  standings?: Partial<StandingsConfig> | null;
+  cover_url?: string | null;
+  cover_key?: string | null;
+  color?: string | null;
   created_at: string;
 }
 
@@ -43,6 +54,10 @@ export interface Team {
   color_primary: string;
   color_secondary: string;
   logo_url: string | null;
+  sport: Sport;
+  logo_key?: string | null;
+  cover_url?: string | null;
+  cover_key?: string | null;
 }
 
 export interface Player {
@@ -56,9 +71,38 @@ export interface Player {
   position: string | null;
   is_libero: boolean;
   is_captain: boolean;
+  photo_url?: string | null;
+  photo_key?: string | null;
 }
 
-export type PlayerPublic = Omit<Player, "cedula" | "birth_date"> & { birth_year: number };
+export type PlayerPublic = Omit<Player, "cedula" | "birth_date" | "photo_key"> & { birth_year: number };
+
+export interface Referee {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  city: string | null;
+  level: "provincial" | "nacional" | "internacional" | "parroquial" | null;
+  active: boolean;
+}
+
+export interface RoleInvite {
+  email: string;
+  role: Role;
+  created_at: string;
+}
+
+export interface AuditEntry {
+  id: number;
+  at: string;
+  actor: string | null;
+  actor_email: string | null;
+  table_name: string;
+  op: "INSERT" | "UPDATE" | "DELETE";
+  row_id: string | null;
+  changes: Record<string, unknown> | null;
+}
 
 export interface TournamentTeam {
   tournament_id: string;
