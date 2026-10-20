@@ -20,3 +20,8 @@ Key patterns:
 - Reference users with `auth.users(id)`; use `auth.uid()` in RLS policies.
 - For storage uploads, persist both the returned `url` and `key`.
 <!-- INSFORGE:END -->
+
+## Hosting
+
+- Production site: **https://voley.integroecuador.com**, hosted on **Hostinger** (Node.js).
+- InsForge is the backend only. Do not deploy the frontend with `insforge deployments deploy` and do not link to `*.insforge.site`.

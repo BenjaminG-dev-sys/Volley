@@ -3,6 +3,7 @@
 import { createAuthActions } from "@insforge/sdk/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { safeNext } from "@/lib/redirect";
 
 export async function signIn(_prev: { error: string | null }, formData: FormData) {
   const auth = createAuthActions({ cookies: await cookies() });
@@ -14,8 +15,7 @@ export async function signIn(_prev: { error: string | null }, formData: FormData
     const msg = /verif/i.test(error.message) ? "La cuenta aún no verifica su correo." : "Correo o contraseña incorrectos.";
     return { error: msg };
   }
-  const next = String(formData.get("next") || "/");
-  redirect(next.startsWith("/") ? next : "/");
+  redirect(safeNext(String(formData.get("next") ?? "")));
 }
 
 export async function signOut() {

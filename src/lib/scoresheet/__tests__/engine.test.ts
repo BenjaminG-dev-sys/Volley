@@ -263,3 +263,20 @@ describe("deshacer y replay", () => {
     expect(initialState(setup).phase).toBe("coin_toss");
   });
 });
+
+describe("cambio de cancha manual", () => {
+  it("intercambia los lados, se deshace y se mantiene en el set siguiente", () => {
+    const s = new Sim().toss("A", "A").lineups().add({ type: "switch_sides" });
+    expect(s.state.leftTeam).toBe("B");
+    expect(s.state.log.at(-1)?.text).toBe("Cambio de cancha: Club B a la izquierda");
+    expect(new Sim().toss("A", "A").lineups().add({ type: "switch_sides" }, { type: "undo" }).state.leftTeam).toBe("A");
+    s.points("A".repeat(25));
+    expect(s.state.currentSet).toBe(2);
+    expect(s.state.leftTeam).toBe("A");
+  });
+
+  it("no se registra antes del sorteo", () => {
+    const { rejected } = new Sim().add({ type: "switch_sides" }).detailed;
+    expect(rejected).toHaveLength(1);
+  });
+});

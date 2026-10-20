@@ -1,4 +1,4 @@
-import { MAX_SUBSTITUTIONS, MAX_TIMEOUTS, applyEvent, currentSet } from "./reducer";
+import { applyEvent, currentSet } from "./reducer";
 import { isBackRow } from "./rotation";
 import { type MatchEventInput, type MatchSetup, type MatchState, RuleError, type Side } from "./types";
 
@@ -15,11 +15,12 @@ export function validateEvent(state: MatchState, event: MatchEventInput, setup: 
 
 export function remaining(state: MatchState, team: Side) {
   const set = currentSet(state);
-  if (!set) return { timeouts: MAX_TIMEOUTS, substitutions: MAX_SUBSTITUTIONS };
+  const { timeoutsPerSet, maxSubstitutions } = state.rules;
+  if (!set) return { timeouts: timeoutsPerSet, substitutions: maxSubstitutions };
   const ts = set.teams[team];
   return {
-    timeouts: MAX_TIMEOUTS - ts.timeouts,
-    substitutions: MAX_SUBSTITUTIONS - ts.substitutions,
+    timeouts: timeoutsPerSet - ts.timeouts,
+    substitutions: maxSubstitutions - ts.substitutions,
   };
 }
 

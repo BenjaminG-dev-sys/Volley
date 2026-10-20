@@ -26,12 +26,52 @@ export interface StandingRow {
 
 const ratio = (a: number, b: number) => (b === 0 ? (a === 0 ? 0 : Number.POSITIVE_INFINITY) : a / b);
 
-export function matchPoints(winnerSets: number, loserSets: number, bestOf: 3 | 5): [number, number] {
-  const tieBreakLoss = loserSets === Math.floor(bestOf / 2);
-  return tieBreakLoss ? [2, 1] : [3, 0];
+/** Sistema de puntos de la tabla (configurable por torneo en `tournaments.standings`). */
+export interface StandingsConfig {
+  /** Victoria sin llegar al set decisivo (3-0 / 3-1 o 2-0). */
+  win: number;
+  /** Victoria en el set decisivo (3-2 o 2-1). */
+  winTiebreak: number;
+  /** Derrota en el set decisivo. */
+  lossTiebreak: number;
+  /** Derrota sin llegar al set decisivo. */
+  loss: number;
 }
 
-export function computeStandings(teamIds: string[], matches: FinishedMatch[]): StandingRow[] {
+export const STANDINGS_PRESETS = {
+  fivb: { label: "FIVB: 3 · 2 · 1 · 0", config: { win: 3, winTiebreak: 2, lossTiebreak: 1, loss: 0 } },
+  dos_uno: { label: "2 por ganar · 1 por perder", config: { win: 2, winTiebreak: 2, lossTiebreak: 1, loss: 1 } },
+  tres_cero: { label: "3 por ganar · 0 por perder", config: { win: 3, winTiebreak: 3, lossTiebreak: 0, loss: 0 } },
+} as const satisfies Record<string, { label: string; config: StandingsConfig }>;
+
+export type StandingsPresetId = keyof typeof STANDINGS_PRESETS;
+export const DEFAULT_STANDINGS: StandingsConfig = STANDINGS_PRESETS.fivb.config;
+
+/** Configuración válida a partir de lo guardado en la base (o FIVB si falta o es inválida). */
+export function standingsConfig(raw: unknown): StandingsConfig {
+  const r = (raw ?? {}) as Partial<Record<keyof StandingsConfig, unknown>>;
+  const n = (v: unknown, d: number) => (typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 10 ? v : d);
+  return {
+    win: n(r.win, DEFAULT_STANDINGS.win),
+    winTiebreak: n(r.winTiebreak, DEFAULT_STANDINGS.winTiebreak),
+    lossTiebreak: n(r.lossTiebreak, DEFAULT_STANDINGS.lossTiebreak),
+    loss: n(r.loss, DEFAULT_STANDINGS.loss),
+  };
+}
+
+/** Leyenda del sistema de puntos, p. ej. "Puntos: 3-0 / 3-1 = 3 · 3-2 = 2 y 1". */
+export function pointsLegend(c: StandingsConfig, bestOf: 3 | 5): string {
+  const win = bestOf === 5 ? "3-0 / 3-1" : "2-0";
+  const tb = bestOf === 5 ? "3-2" : "2-1";
+  return `Puntos: ${win} = ${c.win}${c.loss ? ` (perdedor ${c.loss})` : ""} · ${tb} = ${c.winTiebreak} y ${c.lossTiebreak}`;
+}
+
+export function matchPoints(winnerSets: number, loserSets: number, bestOf: 3 | 5, config: StandingsConfig = DEFAULT_STANDINGS): [number, number] {
+  const tieBreak = loserSets === Math.floor(bestOf / 2);
+  return tieBreak ? [config.winTiebreak, config.lossTiebreak] : [config.win, config.loss];
+}
+
+export function computeStandings(teamIds: string[], matches: FinishedMatch[], config: StandingsConfig = DEFAULT_STANDINGS): StandingRow[] {
   const rows = new Map<string, StandingRow>(
     teamIds.map((id) => [
       id,
@@ -61,7 +101,7 @@ export function computeStandings(teamIds: string[], matches: FinishedMatch[]): S
     away.setsWon += as;
     away.setsLost += hs;
     const [w, l] = hs > as ? [home, away] : [away, home];
-    const [pw, pl] = matchPoints(Math.max(hs, as), Math.min(hs, as), m.bestOf);
+    const [pw, pl] = matchPoints(Math.max(hs, as), Math.min(hs, as), m.bestOf, config);
     w.won++;
     l.lost++;
     w.points += pw;

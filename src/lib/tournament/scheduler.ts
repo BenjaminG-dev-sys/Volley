@@ -50,3 +50,52 @@ export function crossSemis(groupA: string[], groupB: string[]): Fixture[] {
     { round: 1, home: groupB[0], away: groupA[1] },
   ];
 }
+
+export interface ScheduleRow {
+  stage: "group" | "league";
+  group_label: string | null;
+  round: number;
+  home_team_id: string;
+  away_team_id: string;
+  venue_id: string | null;
+  scheduled_at: string;
+}
+
+/**
+ * Calendario completo listo para `replace_schedule`: grupos en serpentina, todos contra todos por grupo,
+ * una jornada cada `daysBetweenRounds` días y partidos cada `slotHours` horas desde `startMs`.
+ */
+export function buildSchedule(opts: {
+  teamIds: string[];
+  groupCount: number;
+  startMs: number;
+  venueId: string | null;
+  daysBetweenRounds?: number;
+  slotHours?: number;
+}): { groups: { team_id: string; group_label: string | null }[]; matches: ScheduleRow[] } {
+  const groupCount = Math.max(1, Math.min(opts.groupCount, Math.floor(opts.teamIds.length / 2) || 1));
+  const multi = groupCount > 1;
+  const groups = snakeGroups(opts.teamIds, groupCount);
+  const days = opts.daysBetweenRounds ?? 7;
+  const slotMs = (opts.slotHours ?? 2) * 3600_000;
+  const slots = new Map<number, number>();
+  const matches = groups.flatMap((g, gi) =>
+    roundRobin(g).map((fx) => {
+      const slot = slots.get(fx.round) ?? 0;
+      slots.set(fx.round, slot + 1);
+      return {
+        stage: multi ? ("group" as const) : ("league" as const),
+        group_label: multi ? groupLabel(gi) : null,
+        round: fx.round,
+        home_team_id: fx.home,
+        away_team_id: fx.away,
+        venue_id: opts.venueId,
+        scheduled_at: new Date(opts.startMs + (fx.round - 1) * days * 86400_000 + slot * slotMs).toISOString(),
+      };
+    }),
+  );
+  return {
+    groups: groups.flatMap((g, gi) => g.map((team_id) => ({ team_id, group_label: multi ? groupLabel(gi) : null }))),
+    matches,
+  };
+}
