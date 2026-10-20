@@ -1,28 +1,33 @@
-# Video de presentación — Voley EC
+# Video de presentación — Ligas Rurales Quito (ecuavóley)
 
-Video promocional en motion graphics (1920×1080, 30 fps, ≈46 s) hecho con [Remotion](https://www.remotion.dev).
-Usa la misma identidad visual de la app: base monocromo, colores de campaña, Barlow Condensed e Inter.
+Video promocional en motion graphics (1920×1080, 30 fps, ≈47 s) hecho con [Remotion](https://www.remotion.dev).
+Todo es de ecuavóley y usa la identidad de voley.integroecuador.com: paleta azul marino, dorado, rojo, naranja y
+lavanda, la franja de marca, el fondo "esfera" y el logo de la Asociación de Ligas Rurales del Cantón Quito.
+
+Los equipos, resultados, posiciones, nóminas y la planilla salen de la demo real (16 ligas parroquiales,
+Interparroquial de Ecuavóley 2026) y están en `src/data.ts`; las escenas solo leen de ahí. Los marcadores de la
+mesa y del marcador en vivo se calculan con la regla del cambio de saque (`applySideout`): solo suma quien saca.
 
 Escenas, en orden:
 
 1. Intro
-2. Dos modos (vóley y ecuavóley)
+2. Así se juega el ecuavóley
 3. Mesa digital
 4. Marcador en vivo
-5. Estadísticas
-6. Torneos
+5. Planilla y estadísticas
+6. Torneo (Grupo A)
 7. Admin
-8. Perfiles y app
+8. Ligas y app
 9. Contacto
 
 ```console
 cd video
 npm i
 npm run dev                                          # Remotion Studio para previsualizar y editar
-npx remotion render Promo out/voley-ec-promo.mp4     # exportar el MP4
+npx remotion render Promo out/ligas-rurales-ecuavoley.mp4   # exportar el MP4
 ```
 
-- El teléfono y el correo de contacto son props de la composición `Promo`, editables desde el panel de Studio.
+- El teléfono, el correo y la web de contacto son props de la composición `Promo`, editables desde el panel de Studio.
 - Para cambiar los valores por defecto, edita `defaultContact` en `src/scenes/Contact.tsx`.
 - Cada escena también está registrada por separado en la carpeta "Escenas", para previsualizarla sola.
 - Las fuentes están en `public/fonts` (licencia OFL), así el render no depende de la red.

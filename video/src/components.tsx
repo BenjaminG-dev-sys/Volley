@@ -1,12 +1,14 @@
 import React from "react";
 import {
   Easing,
+  Img,
   interpolate,
   spring,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { C, display, sans } from "./theme";
+import { BAND, C, display, sans } from "./theme";
 
 const clamp = {
   extrapolateLeft: "clamp",
@@ -175,13 +177,13 @@ export const Crest: React.FC<{ name: string; color: string; size?: number; ink?:
       flexShrink: 0,
     }}
   >
-    {name.slice(0, 2).toUpperCase()}
+    {(name.includes(" ") ? name.split(" ").map((w) => w[0]).join("") : name.slice(0, 2)).slice(0, 2).toUpperCase()}
   </div>
 );
 
 export const Check: React.FC<{ size?: number; bg?: string; color?: string }> = ({
   size = 48,
-  bg = C.volt,
+  bg = C.gold,
   color = C.ink,
 }) => (
   <div
@@ -217,8 +219,8 @@ export const BrowserFrame: React.FC<{
       height,
       borderRadius: 28,
       overflow: "hidden",
-      background: dark ? "#1c1c1c" : C.paper,
-      boxShadow: "0 40px 90px rgba(0,0,0,0.35)",
+      background: dark ? C.night : C.paper,
+      boxShadow: "0 40px 90px rgba(0,10,40,0.35)",
       display: "flex",
       flexDirection: "column",
       ...style,
@@ -227,7 +229,7 @@ export const BrowserFrame: React.FC<{
     <div
       style={{
         height: 58,
-        background: dark ? "#262626" : C.grey,
+        background: dark ? C.ink : C.surface,
         display: "flex",
         alignItems: "center",
         gap: 12,
@@ -244,7 +246,7 @@ export const BrowserFrame: React.FC<{
           flex: 1,
           height: 34,
           borderRadius: 17,
-          background: dark ? "#333" : C.paper,
+          background: dark ? C.navy : C.paper,
           color: C.muted,
           fontFamily: sans,
           fontSize: 18,
@@ -273,7 +275,7 @@ export const DeviceFrame: React.FC<{
       width,
       height,
       borderRadius: radius,
-      background: "#0a0a0a",
+      background: "#030719",
       padding: bezel,
       boxShadow: "0 40px 90px rgba(0,0,0,0.35)",
       ...style,
@@ -311,3 +313,40 @@ export const Counter: React.FC<{
 };
 
 export { clamp };
+
+/** Franja de 5 colores de la marca (borde superior de la web). */
+export const BrandBand: React.FC<{ height?: number; progress?: number; style?: React.CSSProperties }> = ({
+  height = 14,
+  progress = 1,
+  style,
+}) => (
+  <div style={{ display: "flex", height, width: `${progress * 100}%`, ...style }}>
+    {BAND.map((c) => (
+      <div key={c} style={{ flex: 1, background: c }} />
+    ))}
+  </div>
+);
+
+/** Logo circular de la Asociación (con texto) o solo el emblema. */
+export const Logo: React.FC<{ size: number; variant?: "logo" | "emblema"; style?: React.CSSProperties }> = ({
+  size,
+  variant = "logo",
+  style,
+}) => (
+  <div
+    style={{
+      width: size,
+      height: size,
+      borderRadius: "50%",
+      background: C.paper,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: "0 20px 50px rgba(0,10,40,0.25)",
+      flexShrink: 0,
+      ...style,
+    }}
+  >
+    <Img src={staticFile(`brand/${variant}.png`)} style={{ width: size * 0.86, height: size * 0.86, objectFit: "contain" }} />
+  </div>
+);

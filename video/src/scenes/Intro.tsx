@@ -1,76 +1,58 @@
 import React from "react";
-import { AbsoluteFill, Interactive, interpolate, useCurrentFrame, Easing } from "remotion";
-import { Ball, Reveal, useEnter } from "../components";
-import { C, display, sans } from "../theme";
-
-const STRIPES = [C.volt, C.orange, C.sky, C.sun, C.rose];
+import { AbsoluteFill, Easing, Interactive, interpolate, useCurrentFrame } from "remotion";
+import { BrandBand, Logo, Reveal, useEnter } from "../components";
+import { BRAND } from "../data";
+import { C, ESFERA, sans } from "../theme";
 
 export const Intro: React.FC = () => {
   const frame = useCurrentFrame();
-  const ball = useEnter(22, 14);
+  const logo = useEnter(6, 14);
 
   return (
-    <AbsoluteFill name="Intro" style={{ backgroundColor: C.ink, overflow: "hidden" }}>
-      {/* Barrido de colores de campaña */}
-      {STRIPES.map((color, i) => (
-        <div
-          key={color}
-          style={{
-            position: "absolute",
-            top: -300,
-            left: 0,
-            width: 380,
-            height: 1700,
-            background: color,
-            rotate: "14deg",
-            translate: `${interpolate(frame, [i * 4, i * 4 + 38], [-700, 2500], {
-              extrapolateLeft: "clamp",
-              extrapolateRight: "clamp",
-              easing: Easing.bezier(0.7, 0, 0.3, 1),
-            })}px 0px`,
-          }}
-        />
-      ))}
+    <AbsoluteFill name="Intro" style={{ background: ESFERA, overflow: "hidden" }}>
+      <BrandBand
+        height={16}
+        progress={interpolate(frame, [0, 24], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.bezier(0.7, 0, 0.3, 1) })}
+      />
 
-      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", flexDirection: "column" }}>
-        <div style={{ scale: ball, rotate: `${(1 - ball) * -180 + frame * 1.2}deg`, marginBottom: 20 }}>
-          <Ball size={150} color={C.volt} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", flexDirection: "column", gap: 34 }}>
+        <div style={{ scale: logo, rotate: `${(1 - logo) * -90}deg` }}>
+          <Logo size={300} />
         </div>
         <div
           style={{
             display: "flex",
-            gap: 40,
-            fontFamily: display,
+            gap: 34,
+            fontFamily: "Barlow Condensed",
             fontWeight: 800,
-            fontSize: 330,
+            fontSize: 210,
             lineHeight: 0.88,
             textTransform: "uppercase",
           }}
         >
-          <Reveal delay={28}>
-            <span style={{ color: C.paper }}>Voley</span>
+          <Reveal delay={22}>
+            <span style={{ color: C.paper }}>Ligas Rurales</span>
           </Reveal>
-          <Reveal delay={34}>
-            <span style={{ color: C.volt }}>EC</span>
+          <Reveal delay={28}>
+            <span style={{ color: C.gold }}>Quito</span>
           </Reveal>
         </div>
         <Interactive.Div
           name="Tagline"
           style={{
-            marginTop: 40,
             fontFamily: sans,
             fontWeight: 600,
-            fontSize: 64,
+            fontSize: 60,
             color: C.paper,
-            opacity: interpolate(frame, [50, 66], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
-            translate: interpolate(frame, [50, 66], ["0px 30px", "0px 0px"], {
+            opacity: interpolate(frame, [44, 60], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+            translate: interpolate(frame, [44, 60], ["0px 30px", "0px 0px"], {
               extrapolateLeft: "clamp",
               extrapolateRight: "clamp",
               easing: Easing.bezier(0.16, 1, 0.3, 1),
             }),
           }}
         >
-          Torneos de vóley y ecuavóley, en vivo.
+          {BRAND.tournament}
         </Interactive.Div>
       </AbsoluteFill>
 
@@ -78,7 +60,7 @@ export const Intro: React.FC = () => {
         name="Features strip"
         style={{
           position: "absolute",
-          bottom: 110,
+          bottom: 100,
           left: 0,
           right: 0,
           textAlign: "center",
@@ -86,11 +68,11 @@ export const Intro: React.FC = () => {
           fontWeight: 700,
           fontSize: 34,
           letterSpacing: "0.22em",
-          color: "#a1a1a3",
-          opacity: interpolate(frame, [70, 86], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+          color: C.lavenderSoft,
+          opacity: interpolate(frame, [64, 80], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
         }}
       >
-        PLANILLA DIGITAL · MARCADOR EN VIVO · ADMIN COMPLETO
+        16 LIGAS PARROQUIALES · 4 GRUPOS · ECUAVÓLEY EN VIVO
       </Interactive.Div>
     </AbsoluteFill>
   );

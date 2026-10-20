@@ -5,8 +5,8 @@ import { Admin } from "./scenes/Admin";
 import { Contact, contactSchema, defaultContact } from "./scenes/Contact";
 import { Intro } from "./scenes/Intro";
 import { LiveScore } from "./scenes/LiveScore";
-import { Modes } from "./scenes/Modes";
 import { Profiles } from "./scenes/Profiles";
+import { Rules } from "./scenes/Rules";
 import { Scorer } from "./scenes/Scorer";
 import { Stats } from "./scenes/Stats";
 import { Tournaments } from "./scenes/Tournaments";
@@ -26,13 +26,13 @@ export const RemotionRoot: React.FC = () => (
     />
     <Folder name="Escenas">
       <Composition id="Intro" component={Intro} durationInFrames={SCENES.intro} {...size} />
-      <Composition id="Modos" component={Modes} durationInFrames={SCENES.modes} {...size} />
+      <Composition id="Reglamento" component={Rules} durationInFrames={SCENES.rules} {...size} />
       <Composition id="Mesa" component={Scorer} durationInFrames={SCENES.scorer} {...size} />
       <Composition id="Marcador" component={LiveScore} durationInFrames={SCENES.live} {...size} />
       <Composition id="Estadisticas" component={Stats} durationInFrames={SCENES.stats} {...size} />
-      <Composition id="Torneos" component={Tournaments} durationInFrames={SCENES.tournaments} {...size} />
+      <Composition id="Torneo" component={Tournaments} durationInFrames={SCENES.tournaments} {...size} />
       <Composition id="Admin" component={Admin} durationInFrames={SCENES.admin} {...size} />
-      <Composition id="Perfiles" component={Profiles} durationInFrames={SCENES.profiles} {...size} />
+      <Composition id="Ligas" component={Profiles} durationInFrames={SCENES.profiles} {...size} />
       <Composition
         id="Contacto"
         component={Contact}
