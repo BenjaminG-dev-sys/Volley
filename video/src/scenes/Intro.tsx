@@ -2,11 +2,12 @@ import React from "react";
 import { AbsoluteFill, Easing, Interactive, interpolate, useCurrentFrame } from "remotion";
 import { BrandBand, Logo, Reveal, useEnter } from "../components";
 import { BRAND } from "../data";
+import { INTRO } from "../timeline";
 import { C, ESFERA, sans } from "../theme";
 
 export const Intro: React.FC = () => {
   const frame = useCurrentFrame();
-  const logo = useEnter(6, 14);
+  const logo = useEnter(0, 14);
 
   return (
     <AbsoluteFill name="Intro" style={{ background: ESFERA, overflow: "hidden" }}>
@@ -30,10 +31,10 @@ export const Intro: React.FC = () => {
             textTransform: "uppercase",
           }}
         >
-          <Reveal delay={22}>
+          <Reveal delay={INTRO.title}>
             <span style={{ color: C.paper }}>Ligas Rurales</span>
           </Reveal>
-          <Reveal delay={28}>
+          <Reveal delay={INTRO.title + 6}>
             <span style={{ color: C.gold }}>Quito</span>
           </Reveal>
         </div>
@@ -44,8 +45,8 @@ export const Intro: React.FC = () => {
             fontWeight: 600,
             fontSize: 60,
             color: C.paper,
-            opacity: interpolate(frame, [44, 60], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
-            translate: interpolate(frame, [44, 60], ["0px 30px", "0px 0px"], {
+            opacity: interpolate(frame, [INTRO.tagline, INTRO.tagline + 15], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+            translate: interpolate(frame, [INTRO.tagline, INTRO.tagline + 15], ["0px 30px", "0px 0px"], {
               extrapolateLeft: "clamp",
               extrapolateRight: "clamp",
               easing: Easing.bezier(0.16, 1, 0.3, 1),
@@ -69,7 +70,7 @@ export const Intro: React.FC = () => {
           fontSize: 34,
           letterSpacing: "0.22em",
           color: C.lavenderSoft,
-          opacity: interpolate(frame, [64, 80], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+          opacity: interpolate(frame, [INTRO.strip, INTRO.strip + 15], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
         }}
       >
         16 LIGAS PARROQUIALES · 4 GRUPOS · ECUAVÓLEY EN VIVO

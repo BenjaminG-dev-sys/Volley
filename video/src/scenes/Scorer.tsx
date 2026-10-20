@@ -3,9 +3,10 @@ import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
 import { Ball, BigTitle, DeviceFrame, FadeUp, Kicker, Pill, useEnter } from "../components";
 import { MESA_PLAYS, MESA_START, VENUES, rallyAt, team, type Side } from "../data";
 import { C, display, sans } from "../theme";
+import { MESA } from "../timeline";
 
-const OFFLINE_FROM = 70;
-const SYNC_AT = 150;
+const OFFLINE_FROM = MESA.offlineFrom;
+const SYNC_AT = MESA.syncAt;
 
 const TeamPanel: React.FC<{
   name: string;

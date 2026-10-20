@@ -181,22 +181,23 @@ export function rallyAt(frame: number, start: Omit<RallyState, "last">, plays: {
   return { state: idx < 0 ? { ...start, last: null } : states[idx], at: idx < 0 ? null : plays[idx].f, idx };
 }
 
+// Las jugadas caen sobre el pulso de la música (múltiplos de 15 frames, ver timeline.ts).
 /** Mesa: set 1 El Quinche–Amaguaña desde el 8-5 en vivo de la web (saca El Quinche). */
 export const MESA_START = { h: 8, a: 5, serving: "H" as Side };
 export const MESA_PLAYS: { f: number; w: Side }[] = [
-  { f: 36, w: "H" }, // 9-5
-  { f: 58, w: "A" }, // cambio: saca Amaguaña
-  { f: 80, w: "A" }, // 9-6
-  { f: 100, w: "A" }, // 9-7
-  { f: 122, w: "H" }, // cambio: saca El Quinche
-  { f: 142, w: "H" }, // 10-7
+  { f: 30, w: "H" }, // 9-5
+  { f: 60, w: "A" }, // cambio: saca Amaguaña
+  { f: 75, w: "A" }, // 9-6
+  { f: 90, w: "A" }, // 9-7
+  { f: 120, w: "H" }, // cambio: saca El Quinche
+  { f: 150, w: "H" }, // 10-7
 ];
 
 /** Marcador: el mismo set más tarde, de 13-12 a 15-12. */
 export const LIVE_START = { h: 13, a: 12, serving: "H" as Side };
 export const LIVE_PLAYS: { f: number; w: Side }[] = [
-  { f: 34, w: "A" }, // cambio: saca Amaguaña
-  { f: 58, w: "H" }, // cambio: saca El Quinche
-  { f: 82, w: "H" }, // 14-12
-  { f: 106, w: "H" }, // 15-12 → set
+  { f: 30, w: "A" }, // cambio: saca Amaguaña
+  { f: 60, w: "H" }, // cambio: saca El Quinche
+  { f: 90, w: "H" }, // 14-12
+  { f: 120, w: "H" }, // 15-12 → set
 ];

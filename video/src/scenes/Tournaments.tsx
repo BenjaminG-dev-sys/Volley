@@ -3,6 +3,7 @@ import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
 import { BigTitle, Crest, FadeUp, Kicker, Pill, useEnter } from "../components";
 import { GROUP_A, OTHER_LEADERS, RULES, standings, team } from "../data";
 import { C, display, sans } from "../theme";
+import { TORNEO_STEPS } from "../timeline";
 
 const STEPS = ["Datos", "Equipos", "Formato", "Calendario"];
 const COLS = "60px 1fr 70px 70px 70px 110px 130px 90px";
@@ -54,7 +55,7 @@ const Row: React.FC<{ i: number; row: (typeof TABLE)[number]; delay: number }> =
 
 export const Tournaments: React.FC = () => {
   const frame = useCurrentFrame();
-  const active = Math.min(STEPS.length - 1, Math.floor(interpolate(frame, [20, 100], [0, STEPS.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })));
+  const active = Math.min(STEPS.length - 1, Math.floor(interpolate(frame, [TORNEO_STEPS.from, TORNEO_STEPS.to], [0, STEPS.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })));
 
   return (
     <AbsoluteFill name="Torneo" style={{ backgroundColor: C.surface }}>

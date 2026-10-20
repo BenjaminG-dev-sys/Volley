@@ -27,7 +27,7 @@ export const LiveScore: React.FC = () => {
   const lastA = scored && state.last?.winner === "A" ? at : null;
   const setWon = state.h >= 15 && state.h - state.a >= 2;
   const board = useEnter(12);
-  const banner = useEnter(LIVE_PLAYS[LIVE_PLAYS.length - 1].f + 6, 14);
+  const banner = useEnter(LIVE_PLAYS[LIVE_PLAYS.length - 1].f, 14);
   // Aviso de "cambio de saque" cuando gana la jugada quien recibe.
   const change = !scored && at !== null ? interpolate(frame - at, [0, 6, 18, 24], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) : 0;
   const pulse = 0.5 + 0.5 * Math.sin(frame / 4);

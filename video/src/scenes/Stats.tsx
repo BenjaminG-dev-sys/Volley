@@ -3,6 +3,7 @@ import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import { BigTitle, FadeUp, Kicker, useEnter } from "../components";
 import { SHEET, team } from "../data";
 import { C, display, sans } from "../theme";
+import { STATS } from "../timeline";
 
 const Bar: React.FC<{ label: string; h: number; a: number; delay: number; ch: string; ca: string }> = ({ label, h, a, delay, ch, ca }) => {
   const p = useEnter(delay);
@@ -38,7 +39,7 @@ export const Stats: React.FC = () => {
   const step = W / (lead.length - 1);
   const y = (v: number) => H * 0.85 - v * 16;
   const path = lead.map((v, i) => `${i ? "L" : "M"}${i * step},${y(v)}`).join(" ");
-  const draw = interpolate(frame, [60, 150], [0, W], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.cubic) });
+  const draw = interpolate(frame, [STATS.drawFrom, STATS.drawTo], [0, W], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.cubic) });
 
   return (
     <AbsoluteFill name="Estadisticas" style={{ backgroundColor: C.sky }}>

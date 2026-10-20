@@ -2,6 +2,7 @@ import React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import { Ball, BigTitle, Check, FadeUp, Kicker, useEnter } from "../components";
 import { RULES, team } from "../data";
+import { RULES_SERVE } from "../timeline";
 import { C, display, sans } from "../theme";
 
 const CHIPS = [
@@ -39,7 +40,7 @@ export const Rules: React.FC = () => {
   const home = team("elQuinche");
   const away = team("amaguana");
   // Saque del servidor local que cruza la red.
-  const t = interpolate(frame, [70, 110], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.quad) });
+  const t = interpolate(frame, [RULES_SERVE.from, RULES_SERVE.to], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.quad) });
   const bx = 0.08 * W + t * (0.8 * W - 0.08 * W);
   const by = 0.74 * H + t * (0.3 * H - 0.74 * H) - Math.sin(t * Math.PI) * 120;
 
@@ -75,7 +76,7 @@ export const Rules: React.FC = () => {
           {SPOTS.map((s, i) => (
             <Player key={`a${s.role}`} x={1 - s.x} y={1 - s.y} color={away.color} role={s.role} delay={30 + i * 6} />
           ))}
-          <div style={{ position: "absolute", left: bx - 26, top: by - 26, opacity: frame >= 66 ? 1 : 0 }}>
+          <div style={{ position: "absolute", left: bx - 26, top: by - 26, opacity: frame >= RULES_SERVE.from - 4 ? 1 : 0 }}>
             <Ball size={52} color={C.ink} rotate={frame * 6} />
           </div>
         </div>

@@ -83,12 +83,12 @@ export const Contact: React.FC<ContactProps> = ({ phone, email, web }) => {
           justifyContent: "center",
           gap: 18,
           padding: "0 120px",
-          translate: interpolate(frame, [22, 44], ["0px 470px", "0px 0px"], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.bezier(0.16, 1, 0.3, 1) }),
+          translate: interpolate(frame, [30, 45], ["0px 470px", "0px 0px"], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.bezier(0.16, 1, 0.3, 1) }),
         }}
       >
-        <ContactItem label="LLÁMANOS" value={phone} icon={<Icon d={PHONE} />} delay={42} size={72} />
-        <ContactItem label="ESCRÍBENOS" value={email} icon={<Icon d={MAIL} />} delay={50} size={72} />
-        <ContactItem label="WEB" value={web} icon={<Icon d={WEB} />} delay={58} size={72} />
+        <ContactItem label="LLÁMANOS" value={phone} icon={<Icon d={PHONE} />} delay={45} size={72} />
+        <ContactItem label="ESCRÍBENOS" value={email} icon={<Icon d={MAIL} />} delay={60} size={72} />
+        <ContactItem label="WEB" value={web} icon={<Icon d={WEB} />} delay={75} size={72} />
       </div>
     </AbsoluteFill>
   );

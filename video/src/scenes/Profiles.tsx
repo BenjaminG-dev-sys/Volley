@@ -3,6 +3,7 @@ import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
 import { BigTitle, BrandBand, DeviceFrame, FadeUp, Kicker, Logo, Pill, useEnter } from "../components";
 import { BRAND, MESA_START, ROSTERS, ROUND3, team, type TeamId } from "../data";
 import { C, ESFERA, display, sans } from "../theme";
+import { LIGAS } from "../timeline";
 
 const CARDS: { id: TeamId; rot: number; x: number; y: number }[] = [
   { id: "elQuinche", rot: -8, x: 0, y: 70 },
@@ -46,7 +47,7 @@ const PlayerCard: React.FC<{ card: (typeof CARDS)[number]; delay: number }> = ({
 export const Profiles: React.FC = () => {
   const frame = useCurrentFrame();
   const phone = useEnter(40, 16);
-  const sheet = useEnter(80, 18);
+  const sheet = useEnter(LIGAS.sheet, 18);
   const pulse = 0.5 + 0.5 * Math.sin(frame / 4);
   const home = team("elQuinche");
   const away = team("amaguana");
@@ -141,7 +142,7 @@ export const Profiles: React.FC = () => {
                     fontFamily: sans,
                     fontWeight: 800,
                     fontSize: 22,
-                    scale: interpolate(frame, [120, 126, 132], [1, 0.94, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+                    scale: interpolate(frame, [LIGAS.tap, LIGAS.tap + 6, LIGAS.tap + 12], [1, 0.94, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
                   }}
                 >
                   Instalar

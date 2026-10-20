@@ -3,6 +3,7 @@ import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import { BigTitle, BrowserFrame, Check, Kicker, Logo, useEnter } from "../components";
 import { BRAND, ROUND3, RULES, VENUES, team } from "../data";
 import { C, display, sans } from "../theme";
+import { ADMIN } from "../timeline";
 
 const FEATURES = [
   "Arrastrar y soltar partidos",
@@ -25,8 +26,8 @@ const ROW = 116;
 const MOVED = ROUND3.findIndex((m) => m.home === "guayllabamba");
 const FROM = { row: 2, col: 1, slot: 1 };
 const TO = { row: 2, col: ROUND3[MOVED].venue, slot: 0 };
-const MOVE_START = 96;
-const MOVE_END = 128;
+const MOVE_START = ADMIN.moveStart;
+const MOVE_END = ADMIN.moveEnd;
 
 const cell = (row: number, col: number, slot = 0) => ({ left: LEFT + col * COL + 8, top: TOP + row * ROW + 10 + slot * 52 });
 
@@ -75,8 +76,8 @@ export const Admin: React.FC = () => {
   const to = cell(TO.row, TO.col, TO.slot);
   const pos = { left: from.left + (to.left - from.left) * t, top: from.top + (to.top - from.top) * t };
   const query = "El Quinche";
-  const typed = query.slice(0, Math.floor(interpolate(frame, [28, 58], [0, query.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })));
-  const cursor = interpolate(frame, [70, 80, 140, 150], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const typed = query.slice(0, Math.floor(interpolate(frame, [ADMIN.typeFrom, ADMIN.typeTo], [0, query.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })));
+  const cursor = interpolate(frame, [75, 85, 135, 150], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const rowOf = (time: string) => TIMES.indexOf(time);
 
   return (

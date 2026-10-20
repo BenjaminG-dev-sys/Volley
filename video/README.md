@@ -1,12 +1,17 @@
 # Video de presentación — Ligas Rurales Quito (ecuavóley)
 
-Video promocional en motion graphics (1920×1080, 30 fps, ≈47 s) hecho con [Remotion](https://www.remotion.dev).
+Video promocional en motion graphics (1920×1080, 30 fps, 54,5 s, con música) hecho con [Remotion](https://www.remotion.dev).
 Todo es de ecuavóley y usa la identidad de voley.integroecuador.com: paleta azul marino, dorado, rojo, naranja y
 lavanda, la franja de marca, el fondo "esfera" y el logo de la Asociación de Ligas Rurales del Cantón Quito.
 
 Los equipos, resultados, posiciones, nóminas y la planilla salen de la demo real (16 ligas parroquiales,
 Interparroquial de Ecuavóley 2026) y están en `src/data.ts`; las escenas solo leen de ahí. Los marcadores de la
 mesa y del marcador en vivo se calculan con la regla del cambio de saque (`applySideout`): solo suma quien saca.
+
+La música es original y está sintetizada por código (`scripts/music.ts`, sin licencias de terceros). Va a 120 BPM en
+La menor y lee `src/timeline.ts` y `src/data.ts`, así que cada corte de escena cae en un compás con su golpe, y cada
+punto, cambio de saque, set ganado, tecleo, arrastre y botón tiene su sonido en su frame exacto. Si cambias tiempos
+o jugadas, vuelve a generarla con `npm run music` (crea `public/music.mp3`).
 
 Escenas, en orden:
 

@@ -1,13 +1,14 @@
 {
   "name": "voley-ec-video",
   "version": "1.0.0",
-  "description": "Video de presentación de Voley EC",
+  "description": "Video de presentaci\u00f3n de Voley EC",
   "repository": {},
   "license": "UNLICENSED",
   "private": true,
   "dependencies": {
     "@remotion/cli": "4.0.535",
     "@remotion/fonts": "4.0.535",
+    "@remotion/media": "4.0.535",
     "@remotion/transitions": "4.0.535",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -20,12 +21,14 @@
     "@types/web": "0.0.166",
     "eslint": "9.39.5",
     "prettier": "3.8.1",
+    "tsx": "4.20.6",
     "typescript": "5.9.3"
   },
   "scripts": {
     "dev": "remotion studio",
     "build": "remotion bundle",
     "upgrade": "remotion upgrade",
-    "lint": "eslint src && tsc"
+    "lint": "eslint src && tsc",
+    "music": "tsx scripts/music.ts && remotion ffmpeg -y -loglevel error -i out/music.wav -codec:a libmp3lame -b:a 192k public/music.mp3"
   }
 }
