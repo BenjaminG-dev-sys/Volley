@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { Badge, Card, CardHeader, Empty, LinkButton, LiveBadge, TeamDot } from "@/components/ui";
 import { listMatches, listTeams } from "@/lib/data";
 import { fmtDateTime } from "@/lib/format";
-import { getSession, isStaff } from "@/lib/insforge/server";
+import { getSession } from "@/lib/insforge/server";
+import { scoringAccess } from "@/lib/match";
 import type { Match } from "@/lib/types";
 import { STAGE_LABEL } from "@/lib/types";
 
@@ -13,12 +14,13 @@ export const dynamic = "force-dynamic";
 export default async function MesaPage() {
   const session = await getSession();
   if (!session) redirect("/ingresar?next=/mesa");
-  const staff = isStaff(session);
+  // Solo el vocal designado lleva la planilla, también si es organizador o admin.
   const [teams, live, scheduled] = await Promise.all([
     listTeams(),
-    listMatches({ status: "live", scorerId: staff ? undefined : session.userId }),
-    listMatches({ status: "scheduled", scorerId: staff ? undefined : session.userId }),
+    listMatches({ status: "live", scorerId: session.userId }),
+    listMatches({ status: "scheduled", scorerId: session.userId }),
   ]);
+  const now = new Date();
   const teamMap = new Map(teams.map((t) => [t.id, t]));
   const row = (m: Match) => (
     <div key={m.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
@@ -38,16 +40,28 @@ export default async function MesaPage() {
           {m.live_state.setsWon.A}-{m.live_state.setsWon.B} · {m.live_state.score.A}-{m.live_state.score.B}
         </span>
       )}
-      <LinkButton href={`/mesa/${m.id}`}>{m.status === "live" ? "Continuar planilla" : "Abrir planilla"}</LinkButton>
+      {access(m)}
     </div>
   );
+  function access(m: Match) {
+    const a = scoringAccess(m, session!.userId, now);
+    if (a.ok) return <LinkButton href={`/mesa/${m.id}`}>{m.status === "live" ? "Continuar planilla" : "Abrir planilla"}</LinkButton>;
+    const text =
+      a.reason === "too_early"
+        ? `Se habilita ${fmtDateTime(a.opens!.toISOString())}`
+        : a.reason === "too_late"
+          ? "Fuera de horario"
+          : "Sin horario";
+    return <span className="text-xs text-muted">{text}</span>;
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-3xl font-bold">Mesa de control</h1>
         <p className="text-muted">
-          {staff ? "Todos los partidos (vista de organizador)." : "Partidos asignados a tu usuario como planillero."}
+          Partidos en los que eres el vocal designado. La planilla se habilita 30 min antes de la hora programada y
+          se cierra 4 h después.
         </p>
       </div>
       <Card className="divide-y divide-line">

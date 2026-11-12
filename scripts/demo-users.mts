@@ -30,3 +30,16 @@ const { data: scorer } = await admin.from("profiles").select("user_id").eq("emai
 const { error } = await admin.from("matches").update({ scorer_id: scorer!.user_id }).neq("status", "finished");
 if (error) throw new Error(error.message);
 console.log("✓ planillero asignado a los partidos en vivo y programados");
+
+// La planilla solo se edita en el horario designado (30 min antes a 4 h después).
+// Para la demo, el partido en vivo empezó hace 1 h y el primer programado arranca en 15 min.
+const now = Date.now();
+const { data: live } = await admin.from("matches").select("id").eq("status", "live").limit(1);
+const { data: next } = await admin.from("matches").select("id").eq("status", "scheduled").order("scheduled_at").limit(1);
+for (const [rows, at] of [[live, now - 3600_000], [next, now + 15 * 60_000]] as const) {
+  const id = rows?.[0]?.id;
+  if (!id) continue;
+  const { error: e3 } = await admin.from("matches").update({ scheduled_at: new Date(at).toISOString() }).eq("id", id);
+  if (e3) throw new Error(e3.message);
+}
+console.log("✓ horarios demo dentro de la ventana de planilla");

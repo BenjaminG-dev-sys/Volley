@@ -134,16 +134,16 @@ function MatchEditor({
             Final {m.result?.home_sets}-{m.result?.away_sets}
           </Badge>
         )}
-        <Link className="ml-auto text-xs text-primary hover:underline" href={`/mesa/${m.id}`}>
-          Abrir mesa
+        <Link className="ml-auto text-xs text-primary hover:underline" href={`/partidos/${m.id}/en-vivo`}>
+          Ver marcador
         </Link>
       </div>
       {m.status !== "finished" && (
         <ActionForm action={updateMatch} submit="Guardar" inline>
           <input type="hidden" name="match_id" value={m.id} />
           <input type="hidden" name="tournament_id" value={tournamentId} />
-          <select name="scorer_id" defaultValue={m.scorer_id ?? ""} className={`${inputCls} w-auto`} aria-label="Planillero">
-            <option value="">Sin planillero</option>
+          <select name="scorer_id" defaultValue={m.scorer_id ?? ""} className={`${inputCls} w-auto`} aria-label="Vocal (planillero)" title="Única persona que podrá editar la planilla, solo en su horario">
+            <option value="">Sin vocal</option>
             {scorers.map((s) => (
               <option key={s.user_id} value={s.user_id}>
                 {s.display_name || s.email}

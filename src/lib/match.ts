@@ -102,3 +102,37 @@ export function matchPatch(state: MatchState, homeId: string, awayId: string) {
     winner_team_id: state.phase === "closed" && state.winner ? (state.winner === "A" ? homeId : awayId) : null,
   };
 }
+
+// ---------- Quién y cuándo puede editar la planilla ----------
+// Debe coincidir con public.scoring_window_open (migrations/20261112120000_scorer-only-in-window.sql),
+// que es la regla que realmente se aplica en la base de datos.
+export const SCORING_OPENS_BEFORE_MIN = 30;
+export const SCORING_CLOSES_AFTER_MIN = 240;
+
+export function scoringWindow(scheduledAt: string | null): { opens: Date; closes: Date } | null {
+  if (!scheduledAt) return null;
+  const t = new Date(scheduledAt).getTime();
+  return {
+    opens: new Date(t - SCORING_OPENS_BEFORE_MIN * 60_000),
+    closes: new Date(t + SCORING_CLOSES_AFTER_MIN * 60_000),
+  };
+}
+
+export type ScoringAccess =
+  | { ok: true; closes: Date }
+  | { ok: false; reason: "finished" | "not_assigned" | "unscheduled" | "too_early" | "too_late"; opens?: Date; closes?: Date };
+
+/** Solo el vocal asignado, dentro de su horario, puede editar. Ni el staff anota. */
+export function scoringAccess(
+  m: { status: string; scorer_id: string | null; scheduled_at: string | null },
+  userId: string,
+  now = new Date(),
+): ScoringAccess {
+  if (m.status === "finished") return { ok: false, reason: "finished" };
+  if (!m.scorer_id || m.scorer_id !== userId) return { ok: false, reason: "not_assigned" };
+  const w = scoringWindow(m.scheduled_at);
+  if (!w) return { ok: false, reason: "unscheduled" };
+  if (now < w.opens) return { ok: false, reason: "too_early", ...w };
+  if (now > w.closes) return { ok: false, reason: "too_late", ...w };
+  return { ok: true, closes: w.closes };
+}

@@ -6,6 +6,7 @@ import { Court } from "@/components/court";
 import { Scoreboard } from "@/components/scoreboard";
 import { Badge, Button, Card, Field, LinkButton, cx, inputCls } from "@/components/ui";
 import type { MatchBundle } from "@/lib/data";
+import { fmtTime } from "@/lib/format";
 import { insforge } from "@/lib/insforge/client";
 import { buildSetup, eventToRow, matchPatch, rowToEvent } from "@/lib/match";
 import { enqueue, pending as loadPending, remove, type PendingRow } from "@/lib/offline/queue";
@@ -28,7 +29,8 @@ import {
 
 type Row = { seq: number; type: string; payload: Record<string, unknown>; created_at?: string };
 
-export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
+/** `closesAt`: fin del horario designado; después la base rechaza cualquier evento del vocal. */
+export function ScorerConsole({ bundle, closesAt }: { bundle: MatchBundle; closesAt: string }) {
   const { match, tournament, home, away } = bundle;
   const setup = useMemo(
     () => buildSetup(tournament.best_of, home, away, bundle.homePlayers, bundle.awayPlayers),
@@ -121,8 +123,19 @@ export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
     };
   }, [match.id, flush]);
 
+  const closesMs = new Date(closesAt).getTime();
+  const [expired, setExpired] = useState(() => Date.now() > closesMs);
+  useEffect(() => {
+    const t = setInterval(() => setExpired(Date.now() > closesMs), 15_000);
+    return () => clearInterval(t);
+  }, [closesMs]);
+
   const record = useCallback(
     async (ev: MatchEventInput) => {
+      if (Date.now() > closesMs) {
+        setExpired(true);
+        return showError("Terminó el horario designado: la planilla ya no admite cambios.");
+      }
       if (ev.type === "undo") {
         if (undoDepth === 0) return;
       } else {
@@ -137,7 +150,7 @@ export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
       if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(15);
       void flush();
     },
-    [state, setup, undoDepth, match.id, flush, showError],
+    [state, setup, undoDepth, match.id, flush, showError, closesMs],
   );
 
   // ---------- UI ----------
@@ -153,6 +166,7 @@ export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
         </Link>
         <div className="flex items-center gap-2">
           <Badge tone={online ? "ok" : "live"}>{online ? "En línea" : "Sin conexión"}</Badge>
+          <Badge tone={expired ? "live" : undefined}>{expired ? "Fuera de horario" : `Editable hasta ${fmtTime(closesAt)}`}</Badge>
           {queued.length > 0 && <Badge tone="accent">{queued.length} por sincronizar</Badge>}
           <LinkButton variant="secondary" href={`/partidos/${match.id}/en-vivo`} target="_blank">
             Marcador público ↗
@@ -165,6 +179,11 @@ export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
 
       <Scoreboard state={state} teams={{ A: { name: name("A"), color: colors.A }, B: { name: name("B"), color: colors.B } }} compact />
 
+      {expired && (
+        <div role="status" className="rounded-xl bg-live/15 px-4 py-2 text-center font-semibold">
+          Terminó el horario designado para esta planilla. Si el partido continúa, pide al organizador que lo reprograme.
+        </div>
+      )}
       {state.notice && <div className="rounded-xl bg-accent/20 px-4 py-2 text-center font-semibold">{state.notice}</div>}
       {toast && (
         <div role="alert" className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-lg rounded-xl bg-live px-4 py-3 text-center font-medium text-white shadow-lg">

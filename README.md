@@ -9,7 +9,7 @@ y **planilla electrónica** para la mesa de control, con marcador público en ti
 |---|---|---|---|
 | `admin@demo.ec` | `Voley2026!` | Administrador | Todo, incluido asignar roles |
 | `organizador@demo.ec` | `Voley2026!` | Organizador | Torneos, equipos, nóminas, calendario, asignaciones |
-| `planillero@demo.ec` | `Voley2026!` | Planillero | Llevar la planilla de los partidos asignados |
+| `planillero@demo.ec` | `Voley2026!` | Planillero (vocal) | Llevar la planilla de los partidos asignados, solo en su horario |
 | _(sin cuenta)_ | | Público | Portada, torneos, posiciones, marcador en vivo, planilla final |
 
 ## Guion de demostración (≈5 min)
@@ -37,7 +37,8 @@ y **planilla electrónica** para la mesa de control, con marcador público en ti
 - **Offline**: la mesa guarda cada evento primero en IndexedDB y lo sincroniza en orden al volver la conexión
   (los reintentos no duplican gracias a `UNIQUE (match_id, seq)`).
 - **Seguridad (RLS)**: lectura pública de información deportiva; escritura solo para staff; la planilla solo la
-  escribe el planillero asignado; la cédula y la fecha de nacimiento solo las ve el staff (el público lee la vista
+  escribe **el vocal designado y solo en su horario** (30 min antes a 4 h después de la hora programada; ni
+  organizadores ni admins pueden anotar, solo reasignar al vocal o reprogramar); la cédula y la fecha de nacimiento solo las ve el staff (el público lee la vista
   `players_public`).
 
 ### Reglas FIVB implementadas (`src/lib/scoresheet/`)
