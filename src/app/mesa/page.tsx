@@ -4,6 +4,7 @@ import { Badge, Card, CardHeader, Empty, LinkButton, LiveBadge, TeamDot } from "
 import { listMatches, listTeams } from "@/lib/data";
 import { fmtDateTime } from "@/lib/format";
 import { getSession, isStaff } from "@/lib/insforge/server";
+import { scoringAccess } from "@/lib/scoring-window";
 import type { Match } from "@/lib/types";
 import { STAGE_LABEL } from "@/lib/types";
 
@@ -20,6 +21,21 @@ export default async function MesaPage() {
     listMatches({ status: "scheduled", scorerId: staff ? undefined : session.userId }),
   ]);
   const teamMap = new Map(teams.map((t) => [t.id, t]));
+  const now = new Date();
+  const action = (m: Match) => {
+    const access = scoringAccess(m, session.userId, now);
+    if (access.ok)
+      return <LinkButton href={`/mesa/${m.id}`}>{m.status === "live" ? "Continuar planilla" : "Abrir planilla"}</LinkButton>;
+    if (access.reason === "too_early" && access.window)
+      return <Badge>Se habilita {fmtDateTime(access.window.opensAt.toISOString())}</Badge>;
+    if (access.reason === "too_late") return <Badge>Horario terminado</Badge>;
+    if (access.reason === "no_schedule") return <Badge>Sin horario</Badge>;
+    return (
+      <LinkButton variant="secondary" href={`/partidos/${m.id}/en-vivo`}>
+        Ver en vivo
+      </LinkButton>
+    );
+  };
   const row = (m: Match) => (
     <div key={m.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
       <div className="w-32 text-xs text-muted">{m.status === "live" ? <LiveBadge /> : fmtDateTime(m.scheduled_at)}</div>
@@ -38,7 +54,7 @@ export default async function MesaPage() {
           {m.live_state.setsWon.A}-{m.live_state.setsWon.B} · {m.live_state.score.A}-{m.live_state.score.B}
         </span>
       )}
-      <LinkButton href={`/mesa/${m.id}`}>{m.status === "live" ? "Continuar planilla" : "Abrir planilla"}</LinkButton>
+      {action(m)}
     </div>
   );
 
@@ -47,7 +63,7 @@ export default async function MesaPage() {
       <div>
         <h1 className="font-display text-3xl font-bold">Mesa de control</h1>
         <p className="text-muted">
-          {staff ? "Todos los partidos (vista de organizador)." : "Partidos asignados a tu usuario como planillero."}
+          {staff ? "Todos los partidos (vista de organizador). Solo el vocal designado puede llenar cada planilla, y únicamente en su horario." : "Partidos asignados a ti como vocal. La planilla se habilita 30 min antes del horario y hasta 4 h después."}
         </p>
       </div>
       <Card className="divide-y divide-line">

@@ -28,7 +28,7 @@ import {
 
 type Row = { seq: number; type: string; payload: Record<string, unknown>; created_at?: string };
 
-export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
+export function ScorerConsole({ bundle, closesAt }: { bundle: MatchBundle; closesAt: string }) {
   const { match, tournament, home, away } = bundle;
   const setup = useMemo(
     () => buildSetup(tournament.best_of, home, away, bundle.homePlayers, bundle.awayPlayers),
@@ -41,6 +41,15 @@ export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
   const [online, setOnline] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [selected, setSelected] = useState<{ side: Side; number: number } | null>(null);
+  const closesAtMs = useMemo(() => new Date(closesAt).getTime(), [closesAt]);
+  const [expired, setExpired] = useState(() => Date.now() > closesAtMs);
+
+  useEffect(() => {
+    const ms = closesAtMs - Date.now();
+    if (ms <= 0) return setExpired(true);
+    const t = setTimeout(() => setExpired(true), Math.min(ms, 2_147_000_000));
+    return () => clearTimeout(t);
+  }, [closesAtMs]);
 
   const rows = useMemo(() => {
     const bySeq = new Map<number, Row>();
@@ -123,6 +132,10 @@ export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
 
   const record = useCallback(
     async (ev: MatchEventInput) => {
+      if (Date.now() > closesAtMs) {
+        setExpired(true);
+        return showError("Terminó el horario designado: la planilla ya no admite cambios.");
+      }
       if (ev.type === "undo") {
         if (undoDepth === 0) return;
       } else {
@@ -137,7 +150,7 @@ export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
       if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(15);
       void flush();
     },
-    [state, setup, undoDepth, match.id, flush, showError],
+    [state, setup, undoDepth, match.id, flush, showError, closesAtMs],
   );
 
   // ---------- UI ----------
@@ -157,11 +170,17 @@ export function ScorerConsole({ bundle }: { bundle: MatchBundle }) {
           <LinkButton variant="secondary" href={`/partidos/${match.id}/en-vivo`} target="_blank">
             Marcador público ↗
           </LinkButton>
-          <Button variant="secondary" onClick={() => record({ type: "undo" })} disabled={undoDepth === 0}>
+          <Button variant="secondary" onClick={() => record({ type: "undo" })} disabled={undoDepth === 0 || expired}>
             ↶ Deshacer
           </Button>
         </div>
       </div>
+
+      {expired && (
+        <div role="status" className="rounded-xl bg-live/15 px-4 py-2 text-center font-semibold">
+          Terminó el horario designado para este partido. La planilla quedó bloqueada.
+        </div>
+      )}
 
       <Scoreboard state={state} teams={{ A: { name: name("A"), color: colors.A }, B: { name: name("B"), color: colors.B } }} compact />
 

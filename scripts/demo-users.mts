@@ -30,3 +30,16 @@ const { data: scorer } = await admin.from("profiles").select("user_id").eq("emai
 const { error } = await admin.from("matches").update({ scorer_id: scorer!.user_id }).neq("status", "finished");
 if (error) throw new Error(error.message);
 console.log("✓ planillero asignado a los partidos en vivo y programados");
+
+const { data: next } = await admin
+  .from("matches")
+  .select("id")
+  .eq("status", "scheduled")
+  .order("scheduled_at")
+  .limit(1)
+  .maybeSingle();
+if (next) {
+  const { error: e2 } = await admin.from("matches").update({ scheduled_at: new Date().toISOString() }).eq("id", next.id);
+  if (e2) throw new Error(e2.message);
+  console.log("✓ un partido programado para ahora, con la planilla habilitada para el vocal");
+}
