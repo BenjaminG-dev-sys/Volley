@@ -256,7 +256,7 @@ function PlayerFields({ p, sport }: { p?: Player; sport: "voley" | "ecuavoley" }
           <input name="cedula" defaultValue={p?.cedula} required inputMode="numeric" pattern="\d{10}" maxLength={10} className={inputCls} />
         </Field>
         <Field label="Fecha de nacimiento">
-          <input name="birth_date" type="date" defaultValue={p?.birth_date} required className={inputCls} />
+          <input name="birth_date" type="date" defaultValue={p?.birth_date ?? undefined} required className={inputCls} />
         </Field>
         <Field label="Número">
           <input name="number" type="number" min={1} max={99} defaultValue={p?.number} required className={inputCls} />

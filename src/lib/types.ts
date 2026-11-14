@@ -66,7 +66,7 @@ export interface Player {
   first_name: string;
   last_name: string;
   cedula: string;
-  birth_date: string;
+  birth_date: string | null;
   number: number;
   position: string | null;
   is_libero: boolean;

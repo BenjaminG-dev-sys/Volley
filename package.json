@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "seed": "tsx --env-file=.env.local scripts/seed.mts",
-    "seed:users": "tsx --env-file=.env.local scripts/demo-users.mts"
+    "seed:users": "tsx --env-file=.env.local scripts/demo-users.mts",
+    "import:nominas": "tsx --env-file=.env.local scripts/import-nominas.mts"
   },
   "dependencies": {
     "@insforge/sdk": "^1.5.2",
