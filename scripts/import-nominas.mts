@@ -21,9 +21,27 @@ async function q<T>(p: PromiseLike<{ data: T | null; error: unknown }>, what: st
   return data as T;
 }
 
+async function admin(route: string, body: unknown) {
+  const res = await fetch(`${url}${route}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify(body),
+  });
+  return { ok: res.ok, status: res.status, body: await res.text() };
+}
+
+async function prepare() {
+  const bucket = await admin("/api/storage/buckets", { bucketName: "media", isPublic: true });
+  if (!bucket.ok && bucket.status !== 409 && !/exist/i.test(bucket.body)) throw new Error(`crear bucket media: ${bucket.status} ${bucket.body}`);
+  const sql = await admin("/api/database/advance/rawsql", { query: "ALTER TABLE public.players ALTER COLUMN birth_date DROP NOT NULL;" });
+  if (!sql.ok) throw new Error(`fecha de nacimiento opcional: ${sql.status} ${sql.body}`);
+  console.log("Bucket media y columna birth_date listos.");
+}
+
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
 async function main() {
+  await prepare();
   const data = JSON.parse(await readFile(jsonPath, "utf-8")) as Data;
   const existing = await q<{ id: string; name: string; short_name: string; logo_key: string | null }[]>(
     db.from("teams").select("id, name, short_name, logo_key").eq("sport", "ecuavoley"),
