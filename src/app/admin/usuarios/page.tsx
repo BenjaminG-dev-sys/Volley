@@ -17,7 +17,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
   const filter = rol && rol in ROLE_LABEL ? (rol as Role) : null;
   const db = (await serverClient()).database;
   const [{ data }, { data: invitesData }] = await Promise.all([
-    db.from("profiles").select("user_id, display_name, email, role").order("created_at").limit(1000),
+    db.from("profiles").select("user_id, display_name, email, role, must_change_password").order("created_at").limit(1000),
     db.from("role_invites").select("*").order("created_at", { ascending: false }),
   ]);
   const all = (data ?? []) as Profile[];
@@ -45,6 +45,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
               <div className="min-w-0">
                 <div className="truncate font-medium">{u.display_name || u.email}</div>
                 <div className="truncate text-sm text-muted">{u.email}</div>
+                {u.must_change_password && <div className="text-xs font-semibold text-accent">Contraseña temporal: aún no crea la suya</div>}
               </div>
               <div className="flex flex-wrap gap-1">
                 {(Object.keys(ROLE_LABEL) as Role[]).map((r) => (
@@ -68,10 +69,13 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
       </div>
       <div className="space-y-6">
         <Card>
-          <CardHeader title="Invitar por correo" sub="Si la cuenta ya existe se le asigna el rol; si no, lo recibe al registrarse con ese correo." />
+          <CardHeader title="Invitar por correo" sub="Crea la cuenta y le envía por correo una contraseña temporal. En su primer ingreso deberá crear su propia contraseña. Si la cuenta ya existe, solo se le asigna el rol." />
           <ActionForm action={inviteUser} submit="Invitar" className="p-4">
             <Field label="Correo">
               <input name="email" type="email" required className={inputCls} />
+            </Field>
+            <Field label="Nombre">
+              <input name="name" placeholder="Ej.: Vocalía Zámbiza – Diego Galarza" className={inputCls} />
             </Field>
             <Field label="Rol">
               <select name="role" defaultValue="scorer" className={inputCls}>

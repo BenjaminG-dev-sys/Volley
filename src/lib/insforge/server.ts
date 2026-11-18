@@ -25,7 +25,7 @@ export const getSession = cache(async (): Promise<Session | null> => {
   if (!user) return null;
   const { data: profile } = await client.database
     .from("profiles")
-    .select("user_id, display_name, email, role")
+    .select("user_id, display_name, email, role, must_change_password")
     .eq("user_id", user.id)
     .maybeSingle();
   return { userId: user.id, email: user.email, profile: (profile as Profile) ?? null };

@@ -153,6 +153,7 @@ export interface Profile {
   display_name: string | null;
   email: string | null;
   role: Role;
+  must_change_password?: boolean;
 }
 
 export const STAGE_LABEL: Record<Stage, string> = {

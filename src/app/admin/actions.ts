@@ -1,8 +1,10 @@
 "use server";
 
+import { createClient } from "@insforge/sdk";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseRoster } from "@/lib/admin/csv";
+import { accessEmail, siteUrl, tempPassword } from "@/lib/email/access";
 import { getSession, isStaff, serverClient } from "@/lib/insforge/server";
 import { ROSTER_LIMITS, RULE_PRESETS, SPORT_POSITIONS, type RulePresetId, type Sport } from "@/lib/scoresheet/rules";
 import { CATEGORIES, type Category, validateCategoryAge } from "@/lib/tournament/categories";
@@ -765,18 +767,40 @@ export async function inviteUser(_: ActionState, f: FormData): Promise<ActionSta
   try {
     const db = await adminDb();
     const email = str(f, "email").toLowerCase();
+    const name = str(f, "name");
     const role = str(f, "role") as Role;
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error("Correo inválido.");
     if (!["admin", "organizer", "scorer", "referee", "viewer"].includes(role)) throw new Error("Rol inválido.");
     const existing = await must<{ user_id: string }[]>(db.from("profiles").select("user_id").ilike("email", email).limit(1));
     if (existing.length) {
-      await must(db.from("profiles").update({ role }).eq("user_id", existing[0].user_id));
+      await must(db.from("profiles").update({ role, ...(name ? { display_name: name } : {}) }).eq("user_id", existing[0].user_id));
       revalidatePath("/admin/usuarios");
       return { error: null, ok: "La cuenta ya existía: rol asignado." };
     }
+
+    const password = tempPassword();
     await must(db.from("role_invites").upsert([{ email, role }]));
+    const signup = await createClient({
+      baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL,
+      anonKey: process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY,
+      isServerMode: true,
+    }).auth.signUp({ email, password, name: name || email });
+    const userId = signup.data?.user?.id;
+    if (signup.error || !userId) {
+      await db.from("role_invites").delete().eq("email", email);
+      throw new Error(signup.error?.message ?? "No se pudo crear la cuenta.");
+    }
+    await must(db.from("profiles").update({ must_change_password: true, role, ...(name ? { display_name: name } : {}) }).eq("user_id", userId));
+    await db.from("role_invites").delete().eq("email", email);
+
+    const client = await serverClient();
+    const mail = accessEmail({ name: name || null, email, password, role, url: await siteUrl() });
+    const sent = await client.emails.send({ to: email, subject: mail.subject, html: mail.html });
     revalidatePath("/admin/usuarios");
-    return { error: null, ok: `Invitación guardada: ${email} tendrá ese rol al crear su cuenta.` };
+    if (sent.error) {
+      return { error: null, ok: `Cuenta creada, pero el correo no salió. Entrégale esta contraseña temporal: ${password}` };
+    }
+    return { error: null, ok: `Cuenta creada. Se envió el acceso con contraseña temporal a ${email}.` };
   } catch (e) {
     return fail(e);
   }
