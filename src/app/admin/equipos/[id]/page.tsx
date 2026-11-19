@@ -4,8 +4,9 @@ import { ActionForm } from "@/components/action-form";
 import { Badge, Button, Card, CardHeader, Field, LinkButton, PageHeader, TeamCrest, inputCls } from "@/components/ui";
 import { serverClient } from "@/lib/insforge/server";
 import { ROSTER_LIMITS, SPORT_LABEL, SPORT_POSITIONS } from "@/lib/scoresheet/rules";
-import { CATEGORIES } from "@/lib/tournament/categories";
-import type { Organization, Player, Team } from "@/lib/types";
+import { ageRuleText, findCategory } from "@/lib/tournament/categories";
+import { listCategories } from "@/lib/tournament/categories-server";
+import type { Organization, Player, Team, Tournament } from "@/lib/types";
 import { createPlayer, deletePlayer, deleteTeam, importRoster, updatePlayer, updateTeam, uploadTeamImage } from "../../actions";
 
 export const metadata: Metadata = { title: "Nómina" };
@@ -14,12 +15,23 @@ export const dynamic = "force-dynamic";
 export default async function TeamAdmin({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const db = (await serverClient()).database;
-  const [{ data: team }, { data: players }, { data: teamsData }, { data: orgsData }] = await Promise.all([
+  const [{ data: team }, { data: players }, { data: teamsData }, { data: orgsData }, { data: entriesData }, { list: categories }] = await Promise.all([
     db.from("teams").select("*").eq("id", id).maybeSingle(),
     db.from("players").select("*").eq("team_id", id).order("number"),
     db.from("teams").select("id, name, short_name, sport").order("name"),
     db.from("organizations").select("*").order("name"),
+    db.from("tournament_teams").select("tournament_id").eq("team_id", id),
+    listCategories(),
   ]);
+  const tIds = ((entriesData ?? []) as { tournament_id: string }[]).map((e) => e.tournament_id);
+  const { data: tData } = tIds.length
+    ? await db.from("tournaments").select("id, category, season, status").in("id", tIds).order("season", { ascending: false })
+    : { data: [] };
+  const ageDefault = ((tData ?? []) as Pick<Tournament, "category" | "season" | "status">[])
+    .filter((x) => x.status !== "finished")
+    .map((x) => ({ def: findCategory(x.category, categories), season: x.season }))
+    .filter((x) => x.def && (x.def.max_age != null || x.def.min_age != null))
+    .map((x) => ({ category: x.def!.name, season: x.season }))[0];
   if (!team) notFound();
   const t = team as Team;
   const list = (players ?? []) as Player[];
@@ -118,15 +130,17 @@ export default async function TeamAdmin({ params }: { params: Promise<{ id: stri
               <PlayerFields sport={sport} />
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Validar edad para" hint="Opcional">
-                  <select name="category" className={inputCls}>
+                  <select name="category" defaultValue={ageDefault?.category ?? ""} className={inputCls}>
                     <option value="">Sin validar</option>
-                    {CATEGORIES.map((c) => (
-                      <option key={c}>{c}</option>
+                    {categories.map((c) => (
+                      <option key={c.name} value={c.name}>
+                        {c.name} · {ageRuleText(c)}
+                      </option>
                     ))}
                   </select>
                 </Field>
                 <Field label="Temporada">
-                  <input name="season" type="number" defaultValue={new Date().getFullYear()} className={inputCls} />
+                  <input name="season" type="number" defaultValue={ageDefault?.season ?? new Date().getFullYear()} className={inputCls} />
                 </Field>
               </div>
             </ActionForm>
@@ -144,15 +158,17 @@ export default async function TeamAdmin({ params }: { params: Promise<{ id: stri
               </Field>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Validar edad para">
-                  <select name="category" className={inputCls}>
+                  <select name="category" defaultValue={ageDefault?.category ?? ""} className={inputCls}>
                     <option value="">Sin validar</option>
-                    {CATEGORIES.map((c) => (
-                      <option key={c}>{c}</option>
+                    {categories.map((c) => (
+                      <option key={c.name} value={c.name}>
+                        {c.name} · {ageRuleText(c)}
+                      </option>
                     ))}
                   </select>
                 </Field>
                 <Field label="Temporada">
-                  <input name="season" type="number" defaultValue={new Date().getFullYear()} className={inputCls} />
+                  <input name="season" type="number" defaultValue={ageDefault?.season ?? new Date().getFullYear()} className={inputCls} />
                 </Field>
               </div>
               <a className="text-xs font-semibold underline" href="/admin/exportar?tipo=plantilla">

@@ -5,7 +5,7 @@ import { Badge, Card, CardHeader, Empty, Field, LinkButton, PageHeader, inputCls
 import { listTournaments } from "@/lib/data";
 import { BRANCH_LABEL } from "@/lib/format";
 import { RULE_PRESETS, SPORT_LABEL } from "@/lib/scoresheet/rules";
-import { CATEGORIES } from "@/lib/tournament/categories";
+import { listCategories } from "@/lib/tournament/categories-server";
 import { STANDINGS_PRESETS } from "@/lib/tournament/standings";
 import { createTournament } from "../actions";
 
@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "Torneos" };
 const STATUS = { draft: "Borrador", active: "En curso", finished: "Finalizado" } as const;
 
 export default async function AdminTournaments() {
-  const tournaments = await listTournaments();
+  const [tournaments, { list: categories }] = await Promise.all([listTournaments(), listCategories()]);
   return (
     <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
       <div>
@@ -53,8 +53,8 @@ export default async function AdminTournaments() {
             </Field>
             <Field label="Categoría">
               <select name="category" className={inputCls}>
-                {CATEGORIES.map((c) => (
-                  <option key={c}>{c}</option>
+                {categories.map((c) => (
+                  <option key={c.name}>{c.name}</option>
                 ))}
               </select>
             </Field>

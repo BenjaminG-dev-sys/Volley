@@ -86,7 +86,7 @@ describe("CSV", () => {
       `Sol;Vera;${c2};2003-05-01;7;central;;`,
       `Luz;Toro;${makeCedula(1, 99)};2009-02-02;12;;x;`,
     ].join("\n");
-    const { rows, errors } = parseRoster(csv, { positions: ["armador", "opuesto", "central", "punta"], allowLibero: true, existingNumbers: [1], category: "Sub-19", season: 2026 });
+    const { rows, errors } = parseRoster(csv, { positions: ["armador", "opuesto", "central", "punta"], allowLibero: true, existingNumbers: [1], category: { name: "Sub-19", min_age: null, max_age: 18 }, season: 2026 });
     expect(rows.map((r) => [r.first_name, r.number, r.position, r.is_libero, r.is_captain])).toEqual([
       ["Ana", 7, "armador", false, true],
       ["Luz", 12, "libero", true, false],

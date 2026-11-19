@@ -5,7 +5,7 @@ import { useMemo, useState, useTransition } from "react";
 import { Badge, Button, Card, Field, TeamCrest, cx, inputCls } from "@/components/ui";
 import { BRANCH_LABEL } from "@/lib/format";
 import { RULE_PRESETS, SPORT_LABEL, type RulePresetId } from "@/lib/scoresheet/rules";
-import { CATEGORIES } from "@/lib/tournament/categories";
+import { ageRuleText, type CategoryDef } from "@/lib/tournament/categories";
 import { buildSchedule } from "@/lib/tournament/scheduler";
 import { STANDINGS_PRESETS, type StandingsPresetId } from "@/lib/tournament/standings";
 import type { Team, Venue } from "@/lib/types";
@@ -13,7 +13,7 @@ import { type WizardPayload, createTournamentWizard } from "../../actions";
 
 const STEPS = ["Datos", "Equipos", "Formato", "Calendario", "Confirmar"] as const;
 
-export function TournamentWizard({ teams, venues }: { teams: Team[]; venues: Venue[] }) {
+export function TournamentWizard({ teams, venues, categories }: { teams: Team[]; venues: Venue[]; categories: CategoryDef[] }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +22,7 @@ export function TournamentWizard({ teams, venues }: { teams: Team[]; venues: Ven
   const [p, setP] = useState<WizardPayload>({
     name: "",
     season: new Date().getFullYear(),
-    category: "Mayores",
+    category: categories.find((c) => c.name === "Mayores")?.name ?? categories[0]?.name ?? "Mayores",
     branch: "femenino",
     city: "",
     format: "round_robin",
@@ -122,8 +122,10 @@ export function TournamentWizard({ teams, venues }: { teams: Team[]; venues: Ven
             </Field>
             <Field label="Categoría">
               <select className={inputCls} value={p.category} onChange={(e) => set("category", e.target.value)}>
-                {CATEGORIES.map((c) => (
-                  <option key={c}>{c}</option>
+                {categories.map((c) => (
+                  <option key={c.name} value={c.name}>
+                    {c.name} · {ageRuleText(c)}
+                  </option>
                 ))}
               </select>
             </Field>

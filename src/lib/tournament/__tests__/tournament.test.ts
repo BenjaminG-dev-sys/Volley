@@ -29,6 +29,14 @@ describe("categorías por edad", () => {
     expect(validateCategoryAge("Mayores", "1980-05-05", 2026)).toBeNull();
     expect(validateCategoryAge("Master", "2000-05-05", 2026)).toMatch(/35/);
   });
+  it("Sub-18 pide hasta 18 años y se puede editar", () => {
+    expect(validateCategoryAge("Sub-18", "2008-03-01", 2026)).toBeNull();
+    expect(validateCategoryAge("Sub-18", "2007-12-31", 2026)).toMatch(/18/);
+    expect(validateCategoryAge("Sub-18", "", 2026)).toMatch(/fecha/);
+    const custom = [{ name: "Sub-18", min_age: null, max_age: 17 }];
+    expect(validateCategoryAge("Sub-18", "2008-03-01", 2026, custom)).toMatch(/17/);
+    expect(validateCategoryAge("Master 45", "1985-01-01", 2026)).toMatch(/45/);
+  });
 });
 
 describe("calendario", () => {

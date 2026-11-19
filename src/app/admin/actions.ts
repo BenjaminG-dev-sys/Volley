@@ -7,7 +7,8 @@ import { parseRoster } from "@/lib/admin/csv";
 import { accessEmail, siteUrl, tempPassword } from "@/lib/email/access";
 import { getSession, isStaff, serverClient } from "@/lib/insforge/server";
 import { ROSTER_LIMITS, RULE_PRESETS, SPORT_POSITIONS, type RulePresetId, type Sport } from "@/lib/scoresheet/rules";
-import { CATEGORIES, type Category, validateCategoryAge } from "@/lib/tournament/categories";
+import { findCategory, parseAge, validateCategoryAge } from "@/lib/tournament/categories";
+import { ensureCategoriesSchema, listCategories } from "@/lib/tournament/categories-server";
 import { validateCedula } from "@/lib/tournament/cedula";
 import { semifinalPairs } from "@/lib/tournament/knockout";
 import { buildSchedule } from "@/lib/tournament/scheduler";
@@ -84,9 +85,11 @@ async function removeImage(key: string | null | undefined) {
 }
 
 // ---------- Torneos ----------
-function tournamentFields(f: FormData) {
-  const category = str(f, "category");
-  if (!CATEGORIES.includes(category as Category)) throw new Error("Categoría inválida.");
+async function tournamentFields(f: FormData) {
+  const { list } = await listCategories();
+  const def = findCategory(str(f, "category"), list);
+  if (!def) throw new Error("Categoría inválida.");
+  const category = def.name;
   const name = str(f, "name");
   if (!name) throw new Error("El torneo necesita un nombre.");
   const color = str(f, "color");
@@ -123,7 +126,7 @@ export async function createTournament(_: ActionState, f: FormData): Promise<Act
     const [t] = await must<{ id: string }[]>(
       db
         .from("tournaments")
-        .insert([{ ...tournamentFields(f), ...presetFields(f), ...standingsFields(f), status: "draft" }])
+        .insert([{ ...(await tournamentFields(f)), ...presetFields(f), ...standingsFields(f), status: "draft" }])
         .select("id"),
     );
     tid = t.id;
@@ -160,7 +163,7 @@ export async function createTournamentWizard(p: WizardPayload): Promise<ActionSt
     const [t] = await must<{ id: string }[]>(
       db
         .from("tournaments")
-        .insert([{ ...tournamentFields(f), ...presetFields(f), ...standingsFields(f), status: p.publish ? "active" : "draft" }])
+        .insert([{ ...(await tournamentFields(f)), ...presetFields(f), ...standingsFields(f), status: p.publish ? "active" : "draft" }])
         .select("id"),
     );
     const teamIds = p.teamIds.filter((x) => UUID.test(x));
@@ -195,7 +198,7 @@ export async function updateTournament(_: ActionState, f: FormData): Promise<Act
       must<{ id: string }[]>(db.from("matches").select("id").eq("tournament_id", tid).neq("status", "scheduled").limit(1)),
       must<{ team_id: string }[]>(db.from("tournament_teams").select("team_id").eq("tournament_id", tid).limit(1)),
     ]);
-    const patch: Record<string, unknown> = { ...tournamentFields(f), ...standingsFields(f) };
+    const patch: Record<string, unknown> = { ...(await tournamentFields(f)), ...standingsFields(f) };
     const preset = presetFields(f);
     const rulesChanged =
       preset.sport !== current.sport || preset.best_of !== current.best_of || JSON.stringify(preset.rules) !== JSON.stringify(current.rules ?? null);
@@ -562,7 +565,8 @@ async function playerFields(f: FormData, sport: Sport) {
   const birth = str(f, "birth_date");
   const category = str(f, "category");
   if (category) {
-    const ageErr = validateCategoryAge(category as Category, birth, Number(str(f, "season") || new Date().getFullYear()));
+    const { list } = await listCategories();
+    const ageErr = validateCategoryAge(category, birth, Number(str(f, "season") || new Date().getFullYear()), list);
     if (ageErr) throw new Error(ageErr);
   }
   const isLibero = f.get("is_libero") === "on" && ROSTER_LIMITS[sport].liberos > 0;
@@ -642,12 +646,13 @@ export async function importRoster(_: ActionState, f: FormData): Promise<ActionS
     if (!text) throw new Error("Pega el CSV o elige un archivo.");
     const sport = await teamSport(db, teamId);
     const existing = await must<Player[]>(db.from("players").select("*").eq("team_id", teamId));
-    const category = str(f, "category");
+    const { list } = await listCategories();
+    const category = findCategory(str(f, "category"), list) ?? undefined;
     const { rows, errors } = parseRoster(text, {
       positions: SPORT_POSITIONS[sport],
       allowLibero: ROSTER_LIMITS[sport].liberos > 0,
       existingNumbers: existing.map((p) => p.number),
-      category: CATEGORIES.includes(category as Category) ? (category as Category) : undefined,
+      category,
       season: Number(str(f, "season")) || new Date().getFullYear(),
     });
     const room = ROSTER_LIMITS[sport].players - existing.length;
@@ -662,6 +667,49 @@ export async function importRoster(_: ActionState, f: FormData): Promise<ActionS
     revalidatePath(`/admin/equipos/${teamId}`);
     revalidatePath(`/equipos/${teamId}`);
     return { error: inserted ? null : "No se importó ninguna fila.", ok: inserted ? `${inserted} jugadores importados.` : null, details };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function saveCategory(_: ActionState, f: FormData): Promise<ActionState> {
+  try {
+    const db = await staffDb();
+    await ensureCategoriesSchema();
+    const name = str(f, "name").replace(/\s+/g, " ");
+    if (!name || name.length > 40) throw new Error("La categoría necesita un nombre (máximo 40 caracteres).");
+    const min_age = parseAge(str(f, "min_age"));
+    const max_age = parseAge(str(f, "max_age"));
+    if (min_age != null && max_age != null && min_age > max_age) throw new Error("La edad mínima no puede ser mayor que la máxima.");
+    const sort = Number(str(f, "sort")) || 100;
+    const original = str(f, "original_name");
+    const { list } = await listCategories();
+    const clash = findCategory(name, list);
+    if (clash && clash.name !== original) throw new Error(`Ya existe la categoría ${clash.name}.`);
+    if (original) {
+      await must(db.from("categories").update({ name, min_age, max_age, sort }).eq("name", original));
+      if (original !== name) await must(db.from("tournaments").update({ category: name }).eq("category", original));
+    } else {
+      await must(db.from("categories").insert([{ name, min_age, max_age, sort }]));
+    }
+    revalidatePath("/admin/categorias");
+    revalidatePath("/admin/torneos");
+    revalidatePath("/");
+    return { error: null, ok: original ? "Categoría actualizada." : "Categoría agregada." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function deleteCategory(_: ActionState, f: FormData): Promise<ActionState> {
+  try {
+    const db = await staffDb();
+    const name = str(f, "original_name");
+    const used = await must<{ id: string }[]>(db.from("tournaments").select("id").eq("category", name).limit(1));
+    if (used.length) throw new Error("Hay torneos con esta categoría: cámbialos antes de eliminarla.");
+    await must(db.from("categories").delete().eq("name", name));
+    revalidatePath("/admin/categorias");
+    return { error: null, ok: "Categoría eliminada." };
   } catch (e) {
     return fail(e);
   }

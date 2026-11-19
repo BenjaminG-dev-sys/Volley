@@ -11,6 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const links: AdminLink[] = [
     { href: "/admin", label: "Panel" },
     { href: "/admin/torneos", label: "Torneos" },
+    { href: "/admin/categorias", label: "Categorías" },
     { href: "/admin/partidos", label: "Calendario" },
     { href: "/admin/equipos", label: "Equipos y nóminas" },
     { href: "/admin/arbitros", label: "Árbitros" },

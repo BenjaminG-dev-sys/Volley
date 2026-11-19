@@ -1,7 +1,7 @@
 // CSV mínimo (RFC 4180) y validación de nóminas importadas.
 
 import { validateCedula } from "@/lib/tournament/cedula";
-import { type Category, validateCategoryAge } from "@/lib/tournament/categories";
+import { type CategoryDef, validateCategoryAge } from "@/lib/tournament/categories";
 
 /** Separa un CSV en filas; acepta `,` o `;` (Excel en español) y comillas dobles. */
 export function parseCsv(text: string): string[][] {
@@ -109,7 +109,7 @@ export function parseDate(v: string): string | null {
  */
 export function parseRoster(
   text: string,
-  opts: { positions: readonly string[]; allowLibero: boolean; existingNumbers?: number[]; category?: Category; season?: number },
+  opts: { positions: readonly string[]; allowLibero: boolean; existingNumbers?: number[]; category?: CategoryDef; season?: number },
 ): { rows: RosterRow[]; errors: { line: number; message: string }[] } {
   const [header, ...data] = parseCsv(text);
   const errors: { line: number; message: string }[] = [];

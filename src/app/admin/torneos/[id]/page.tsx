@@ -7,7 +7,8 @@ import { getTournament, listTeams, listVenues } from "@/lib/data";
 import { BRANCH_LABEL, fmtDateTime } from "@/lib/format";
 import { serverClient } from "@/lib/insforge/server";
 import { RULE_PRESETS, SPORT_LABEL, describeRules, resolveRules } from "@/lib/scoresheet/rules";
-import { CATEGORIES } from "@/lib/tournament/categories";
+import { type CategoryDef } from "@/lib/tournament/categories";
+import { listCategories } from "@/lib/tournament/categories-server";
 import { STANDINGS_PRESETS, standingsConfig } from "@/lib/tournament/standings";
 import type { Match, Profile, Referee, Team, Tournament, Venue } from "@/lib/types";
 import { STAGE_LABEL } from "@/lib/types";
@@ -65,12 +66,13 @@ export default async function AdminTournament({
   const { tab: rawTab, jornada } = await searchParams;
   const tab: Tab = TABS.some((t) => t.id === rawTab) ? (rawTab as Tab) : "resumen";
   const db = (await serverClient()).database;
-  const [{ tournament, entries, matches }, teams, venues, scorersRes, refereesRes] = await Promise.all([
+  const [{ tournament, entries, matches }, teams, venues, scorersRes, refereesRes, { list: categories }] = await Promise.all([
     getTournament(id),
     listTeams(),
     listVenues(),
     db.from("profiles").select("user_id, display_name, email, role").in("role", ["scorer", "organizer", "admin"]).limit(200),
     db.from("referees").select("*").eq("active", true).order("name"),
+    listCategories(),
   ]);
   if (!tournament) notFound();
   const scorers = (scorersRes.data ?? []) as Profile[];
@@ -121,7 +123,7 @@ export default async function AdminTournament({
         ))}
       </nav>
 
-      {tab === "resumen" && <SettingsTab t={tournament} locked={locked} hasEntries={entries.length > 0} />}
+      {tab === "resumen" && <SettingsTab t={tournament} locked={locked} hasEntries={entries.length > 0} categories={categories} />}
 
       {tab === "equipos" && (
         <Card>
@@ -341,7 +343,7 @@ export default async function AdminTournament({
   );
 }
 
-function SettingsTab({ t, locked, hasEntries }: { t: Tournament; locked: boolean; hasEntries: boolean }) {
+function SettingsTab({ t, locked, hasEntries, categories }: { t: Tournament; locked: boolean; hasEntries: boolean; categories: CategoryDef[] }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
       <Card>
@@ -360,8 +362,9 @@ function SettingsTab({ t, locked, hasEntries }: { t: Tournament; locked: boolean
             </Field>
             <Field label="Categoría">
               <select name="category" defaultValue={t.category} className={inputCls}>
-                {CATEGORIES.map((c) => (
-                  <option key={c}>{c}</option>
+                {!categories.some((c) => c.name === t.category) && <option>{t.category}</option>}
+                {categories.map((c) => (
+                  <option key={c.name}>{c.name}</option>
                 ))}
               </select>
             </Field>
