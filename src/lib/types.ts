@@ -164,6 +164,11 @@ export const STAGE_LABEL: Record<Stage, string> = {
   final: "Final",
 };
 
+export function stageLabel(m: { stage: Stage; group_label?: string | null }): string {
+  if ((m.stage === "league" || m.stage === "group") && m.group_label) return `Grupo ${m.group_label}`;
+  return STAGE_LABEL[m.stage];
+}
+
 export const ROLE_LABEL: Record<Role, string> = {
   admin: "Administrador",
   organizer: "Organizador",

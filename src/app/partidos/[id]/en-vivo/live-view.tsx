@@ -12,7 +12,7 @@ import { buildSetup, rowToEvent } from "@/lib/match";
 import { currentSet, replay, type MatchEvent } from "@/lib/scoresheet";
 import { fetchMatchEvents, subscribeMatch } from "@/lib/sync/match-channel";
 import { mergeRows, skipsAhead } from "@/lib/sync/rows";
-import { STAGE_LABEL } from "@/lib/types";
+import { stageLabel } from "@/lib/types";
 
 type Row = Pick<MatchBundle["events"][number], "seq" | "type" | "payload" | "created_at">;
 
@@ -92,7 +92,7 @@ export function LiveView({ bundle }: { bundle: MatchBundle }) {
             <Link href={`/torneos/${tournament.id}`} className="underline-anim">
               {tournament.name}
             </Link>{" "}
-            · {STAGE_LABEL[match.stage]}
+            · {stageLabel(match)}
             {match.group_label ? ` ${match.group_label}` : ""}
           </p>
           <h1 className="display-m">

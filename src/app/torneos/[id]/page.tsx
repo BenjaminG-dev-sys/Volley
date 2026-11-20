@@ -28,7 +28,7 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
   if (!tournament) notFound();
   const teamMap = new Map(teams.map((t) => [t.id, t]));
 
-  const groups = [...new Set(entries.map((e) => e.group_label ?? "Única"))].sort();
+  const groups = [...new Set(entries.map((e) => e.group_label ?? "Única"))].sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
   const groupMatches = (g: string) =>
     matches.filter((m) => (m.stage === "group" || m.stage === "league") && (m.group_label ?? "Única") === g);
   const knockout = matches.filter((m) => ["semifinal", "third_place", "final"].includes(m.stage));
@@ -60,7 +60,18 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
     ...(finished.length ? [{ href: "#destacados", label: "Destacados" }] : []),
     ...(tournament.format === "groups_knockout" ? [{ href: "#fase-final", label: "Fase final" }] : []),
     { href: "#calendario", label: "Calendario" },
+    { href: "#por-liga", label: "Por liga" },
   ];
+  const byTime = (a: Match, b: Match) => (a.scheduled_at ?? "").localeCompare(b.scheduled_at ?? "");
+  const ligas = entries
+    .map((e) => {
+      const team = teamMap.get(e.team_id);
+      const ms = matches.filter((m) => m.home_team_id === e.team_id || m.away_team_id === e.team_id).sort(byTime);
+      const done = ms.filter((m) => m.status === "finished");
+      const won = done.filter((m) => m.winner_team_id === e.team_id).length;
+      return { teamId: e.team_id, team, group: e.group_label, ms, played: done.length, won, lost: done.length - won };
+    })
+    .sort((a, b) => (a.team?.short_name ?? a.team?.name ?? "").localeCompare(b.team?.short_name ?? b.team?.name ?? "", "es"));
 
   return (
     <div className="space-y-14">
@@ -71,7 +82,7 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
         image={tournament.cover_url}
         eyebrow={`${SPORT_LABEL[tournament.sport ?? "voley"]} · Temporada ${tournament.season} · ${tournament.category} · ${BRANCH_LABEL[tournament.branch]}`}
         title={tournament.name}
-        sub={`${tournament.city ? `${tournament.city} · ` : ""}${tournament.format === "groups_knockout" ? "Fase de grupos y eliminatorias" : "Todos contra todos"} · ${describeRules(resolveRules(tournament.sport ?? "voley", tournament.rules, tournament.best_of)).split(" · ").slice(1).join(" · ")}`}
+        sub={`${tournament.city ? `${tournament.city} · ` : ""}${tournament.format === "groups_knockout" ? "Fase de grupos y eliminatorias" : groups.length > 1 ? `Fase de grupos · ${groups.length} grupos` : "Todos contra todos"} · ${describeRules(resolveRules(tournament.sport ?? "voley", tournament.rules, tournament.best_of)).split(" · ").slice(1).join(" · ")}`}
         aside={
           <div className="grid grid-cols-3 gap-6 lg:gap-10">
             <StatNumber value={entries.length} label="Equipos" />
@@ -224,6 +235,46 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
           {!rounds.size && (
             <Card>
               <Empty>El calendario aún no se ha generado.</Empty>
+            </Card>
+          )}
+        </div>
+      </section>
+
+      <section id="por-liga" className="scroll-mt-32">
+        <SectionTitle eyebrow={`${ligas.length} ligas parroquiales`} title="Resultados por liga" />
+        <div className="grid items-start gap-3 lg:grid-cols-2">
+          {ligas.map((l) => (
+            <details key={l.teamId} className="group/liga overflow-hidden rounded-2xl border border-line bg-surface open:border-ink">
+              <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-4 [&::-webkit-details-marker]:hidden">
+                <TeamCrest name={l.team?.name ?? "—"} color={l.team?.color_primary ?? "#999"} logo={l.team?.logo_url} size="sm" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-display text-xl font-bold uppercase leading-tight">{l.team?.short_name ?? l.team?.name ?? "—"}</span>
+                  <span className="text-xs text-muted">
+                    {l.group && groups.length > 1 ? `Grupo ${l.group} · ` : ""}
+                    {l.ms.length} {l.ms.length === 1 ? "partido" : "partidos"}
+                  </span>
+                </span>
+                <span className="tabular flex gap-3 text-right text-xs text-muted">
+                  <span><b className="block font-display text-lg text-ink">{l.played}</b>PJ</span>
+                  <span><b className="block font-display text-lg text-ink">{l.won}</b>G</span>
+                  <span><b className="block font-display text-lg text-ink">{l.lost}</b>P</span>
+                </span>
+                <span aria-hidden className="text-muted transition group-open/liga:rotate-180">▾</span>
+              </summary>
+              <div className="divide-y divide-line border-t border-line">
+                {l.ms.map((m) => (
+                  <MatchRow key={m.id} match={m} teams={teamMap} showStage />
+                ))}
+                {!l.ms.length && <p className="px-4 py-4 text-sm text-muted">Sin partidos programados todavía.</p>}
+                <Link href={`/equipos/${l.teamId}`} className="eyebrow block px-4 py-3 text-muted hover:text-ink">
+                  Ver nómina y perfil de la liga →
+                </Link>
+              </div>
+            </details>
+          ))}
+          {!ligas.length && (
+            <Card>
+              <Empty>No hay equipos inscritos.</Empty>
             </Card>
           )}
         </div>

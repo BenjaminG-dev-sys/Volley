@@ -5,7 +5,7 @@ import { listMatches, listTeams } from "@/lib/data";
 import { fmtDateTime } from "@/lib/format";
 import { getSession, isStaff } from "@/lib/insforge/server";
 import type { Match } from "@/lib/types";
-import { STAGE_LABEL } from "@/lib/types";
+import { stageLabel } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Mesa de control" };
 export const dynamic = "force-dynamic";
@@ -31,7 +31,7 @@ export default async function MesaPage() {
         ))}
       </div>
       <Badge>
-        {STAGE_LABEL[m.stage]} {m.group_label ?? ""}
+        {stageLabel(m)}
       </Badge>
       {m.status === "live" && m.live_state && (
         <span className="tabular font-display text-lg font-bold">

@@ -7,7 +7,7 @@ import type { MatchBundle } from "@/lib/data";
 import { fmtDateTime } from "@/lib/format";
 import { buildSetup, rowToEvent } from "@/lib/match";
 import { describeRules, replay, rulesOf, type MatchEvent, type MatchSetup, type SetState, type Side } from "@/lib/scoresheet";
-import { STAGE_LABEL } from "@/lib/types";
+import { stageLabel } from "@/lib/types";
 
 const SANCTION: Record<string, string> = {
   warning: "Amonestación",
@@ -43,7 +43,7 @@ export function ScoresheetView({ bundle, withStats = true }: { bundle: MatchBund
             {home.name} <span className="text-muted">vs</span> {away.name}
           </h1>
           <p className="text-muted">
-            {tournament.name} · {STAGE_LABEL[match.stage]}
+            {tournament.name} · {stageLabel(match)}
             {match.group_label ? ` ${match.group_label}` : ""} · {tournament.category}
           </p>
           <p className="eyebrow mt-1 text-muted">{describeRules(rulesOf(setup))}</p>

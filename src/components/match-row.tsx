@@ -2,7 +2,7 @@ import Link from "next/link";
 import { LiveBadge, TeamCrest, cx } from "@/components/ui";
 import { fmtDayShort, fmtTime } from "@/lib/format";
 import type { Match, Team } from "@/lib/types";
-import { STAGE_LABEL } from "@/lib/types";
+import { stageLabel } from "@/lib/types";
 
 /** Datos de presentación comunes a filas y tarjetas de partido. */
 export function matchView(match: Match, teams: Map<string, Team>) {
@@ -22,7 +22,7 @@ export function matchView(match: Match, teams: Map<string, Team>) {
     homeWon: finished && match.winner_team_id === match.home_team_id,
     awayWon: finished && match.winner_team_id === match.away_team_id,
     href: finished ? `/partidos/${match.id}/planilla` : `/partidos/${match.id}/en-vivo`,
-    stage: `${home?.sport === "ecuavoley" ? "Ecuavóley · " : ""}${STAGE_LABEL[match.stage]}${match.group_label ? ` ${match.group_label}` : ""}`,
+    stage: `${home?.sport === "ecuavoley" ? "Ecuavóley · " : ""}${stageLabel(match)}`,
     liveScore: live && ls ? `Set ${ls.currentSet} · ${ls.score.A}-${ls.score.B}` : null,
     setScores: finished && res ? res.sets.map((s) => `${s.home}-${s.away}`) : null,
   };

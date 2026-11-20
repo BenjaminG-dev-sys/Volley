@@ -11,7 +11,7 @@ import { type CategoryDef } from "@/lib/tournament/categories";
 import { listCategories } from "@/lib/tournament/categories-server";
 import { STANDINGS_PRESETS, standingsConfig } from "@/lib/tournament/standings";
 import type { Match, Profile, Referee, Team, Tournament, Venue } from "@/lib/types";
-import { STAGE_LABEL } from "@/lib/types";
+import { STAGE_LABEL, stageLabel } from "@/lib/types";
 import {
   assignReferees,
   createMatch,
@@ -472,7 +472,7 @@ function MatchEditor({
     <div className="space-y-3 px-4 py-4">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <Badge>
-          {STAGE_LABEL[m.stage]} {m.group_label ?? ""} {m.round ? `· J${m.round}` : ""}
+          {stageLabel(m)} {m.round ? `· J${m.round}` : ""}
         </Badge>
         <TeamCrest name={h?.name ?? ""} color={h?.color_primary ?? "#999"} size="xs" /> <strong>{h?.short_name}</strong> vs
         <TeamCrest name={a?.name ?? ""} color={a?.color_primary ?? "#999"} size="xs" /> <strong>{a?.short_name}</strong>
